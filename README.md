@@ -70,7 +70,3 @@ Currently run by: Daniel Markuza
 	- Make sure object detection model works with drone
 	- Make sure algorithms work with drones
 	- Make flight termination system
-
-
-----
-#### Deadlines: 
