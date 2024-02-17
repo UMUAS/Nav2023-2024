@@ -3,6 +3,14 @@
 ## Overview
 Contains code for handling Flight Termination. This includes code that will run on the drone and the Ground Control Station (GCS).
 
+## Table of Contents
+- [Requirements](#requirements)
+- [Setup](#setup)
+- [Flowchart](#flowchart)
+
+## Requirements
+- Python 3.xx
+
 ## Setup
 
 1. Clone the repository:
@@ -30,3 +38,5 @@ Contains code for handling Flight Termination. This includes code that will run 
     ```bash
     python -m pip install -r requirements.txt
     ```
+
+## Flowchart
