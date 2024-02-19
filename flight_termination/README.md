@@ -40,4 +40,4 @@ Contains code for handling Flight Termination. This includes code that will run 
     ```
 
 ## Flowchart
-<img width="809" alt="process" src="https://github.com/UMUAS/Nav2023-2024/assets/75279931/55f83872-935a-424c-963a-16f09ec1631a">
+<img width="909" alt="process" src="https://github.com/UMUAS/Nav2023-2024/assets/75279931/55f83872-935a-424c-963a-16f09ec1631a">
