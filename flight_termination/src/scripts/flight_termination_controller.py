@@ -23,10 +23,14 @@ def get_command_line_args():
     )
     # Define script arguments.
     parser.add_argument(
-        "--lat", dest="latitude", type=int, help="Latitude of the location to land."
+        "--lat", dest="latitude", type=int, required=True, help="Latitude of the location to land."
     )
     parser.add_argument(
-        "--lon", dest="longitude", type=int, help="Longitude of the location to land."
+        "--lon",
+        dest="longitude",
+        type=int,
+        required=True,
+        help="Longitude of the location to land.",
     )
 
     arguments = parser.parse_args()
