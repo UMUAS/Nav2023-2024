@@ -5,13 +5,13 @@ Contains code for handling Flight Termination. This includes code that will run 
 
 ## Table of Contents
 - [Requirements](#requirements)
-- [Setup](#setup)
+- [Installation](#installation)
 - [Flowchart](#flowchart)
 
 ## Requirements
 - Python 3.xx
 
-## Setup
+## Installation
 
 1. Clone the repository:
 
