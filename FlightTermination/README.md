@@ -19,11 +19,11 @@ Contains code for handling Flight Termination. This includes code that will run 
     git clone https://github.com/UMUAS/Nav2023-2024.git
     ```
 
-2. Navigate to the `flight_termination` directory:
+2. Navigate to the `FlightTermination` directory:
 
     ```bash
     cd Nav2023-2024
-    cd flight_termination
+    cd FlightTermination
     ```
 
 3. Create, then activate a Python Virtual Environment (Recommended):
