@@ -23,7 +23,7 @@ Contains code for handling Flight Termination. This includes code that will run 
 
     ```bash
     cd Nav2023-2024
-    cd FlightTermination
+    cd flight_termination
     ```
 
 3. Create, then activate a Python Virtual Environment (Recommended):

@@ -1,7 +1,6 @@
 ----
 #### ABOUT
-The Git repository for the UMUAS (2023/2024)
-| Currently run by: Daniel Markuza
+The Git repository for the UMUAS (2023/2024) | Currently run by: Daniel Markuza
 
 ----
 #### Design Plan: 
@@ -37,9 +36,9 @@ The Git repository for the UMUAS (2023/2024)
 ----
 #### Goals (per iteration):
 
-###### Iteration 1 (Deadline: February 26th): 
-- **Object Detection:**
-	- Build the initial model
+###### Iteration 1 (INCOMPLETE): 
+- **Object Detection:** 
+	- Build the initial model 
 	- Produce datasets
 	- Train model 
 - **Flight Termination**
@@ -47,8 +46,22 @@ The Git repository for the UMUAS (2023/2024)
 	- Set up switch between the pilot and the autopilot
 		- Talk with GCS about the button to switch between modes
 	- Get started on figuring out how to get to drone to land safely
-###### Iteration 2 (Deadline: March 20th):
+###### Iteration 2 (Deadline: March 27th):
 - **Iteration 1 revisions:**
+	- ~~Communicate what we want changed~~
+	- ~~Revise deadlines~~
+- **Object Detection:**
+    - Negative images (ranging from super off to simialr to pad) - Kfir (Wednesday 13th)
+    - Breaking videos into frames - Toni, Daniel (Saturday 9)
+    - Generate dataset with area for the model focus on (manually or OpenCV) - Workshop (Saturday 9)
+	- Build the model - Workshop (Wednesday, March 13th)
+- **Flight Termination**:
+	- Establish and allow connections on the drone - Workshop 
+    - Detect loss of connection with GCS - Workshop
+    - Detect Critical Failure on drone - Workshop
+
+###### Iteration 3 (Deadline: April 18th):
+- **Iteration 2 revisions:**
 	- Communicate what we want changed
 	- Revise deadlines
 - **Object Detection:**
@@ -57,6 +70,7 @@ The Git repository for the UMUAS (2023/2024)
 		- FPV cameras from drone working with software
 		- Set it up on CPU on board the drone
 - **Flight Termination**:
+    - Run simulation
 	- Land safely
 		- find a safe location to "crash"
 		- Just land (Systems intact just lost connection)
@@ -64,6 +78,7 @@ The Git repository for the UMUAS (2023/2024)
 - **MISC**:
 	- Algorithm for task 1:
 		- Determine how many laps are possible (battery power, and etc.)
+
 ###### Iteration 3 (Deadline: N/A):
 - **PID Tunning**
 - Final testing
