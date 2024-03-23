@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 
-folder_path = "../../assests"
+folder_path = "mnt/c/Users/danie/Documents/Personal/UMUAS/Nav2023-2024/object_detection/assests/frame_879.jpg"
 
 #for filename in os.listdir(folder_path):
     #Getting path to the current image and reading it into cv, converting to right color space
