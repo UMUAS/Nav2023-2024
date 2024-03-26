@@ -6,7 +6,11 @@ import time
 # Add parent directory to Python path at runtime to allow importing packages.
 sys.path.append("../")
 
-from flight_termination.flight_termination import AutopilotConnection, GCSConnection
+from flight_termination.flight_termination import (
+    AutopilotConnection,
+    GCSConnection,
+    begin_flight_termination,
+)
 from flight_termination.utils import (
     AUTOPILOT_BAUDRATE,
     AUTOPILOT_SERIAL_PORT,
@@ -18,26 +22,40 @@ from flight_termination.utils import (
 
 def main():
     latitude, longitude = get_command_line_args()
+
     autopilot_conn = AutopilotConnection(AUTOPILOT_SERIAL_PORT, AUTOPILOT_BAUDRATE)
+    if not autopilot_conn:
+        sys.exit(1)
+    # Wait for a heartbeat from the autopilot before sending commands.
+    autopilot_conn.conn.wait_heartbeat()
 
-    if autopilot_conn:
-        # Wait for a heartbeat from the autopilot before sending commands.
-        autopilot_conn.conn.wait_heartbeat()
+    gcs_conn = GCSConnection(GCS_SERIAL_PORT, GCS_BAUDRATE)
+    if not gcs_conn:
+        sys.exit(1)
+    # Wait for a heartbeat from the GCS before sending commands.
+    gcs_conn.conn.wait_heartbreat()
 
-        gcs_conn = GCSConnection(GCS_SERIAL_PORT, GCS_BAUDRATE)
-        # Wait for a heartbeat from the GCS before sending commands.
-        gcs_conn.conn.wait_heartbreat()
-
-        while True:
-            try:
-                msg = autopilot_conn.conn.recv_match()
-                if msg:
-                    autopilot_conn.check_heartbeat(msg)
-
-            except KeyboardInterrupt:
-                print("Exiting...")
-                autopilot_conn.close()
-                sys.exit(1)
+    while True:
+        # Updates:
+        # Have 1 thread for receiving messages.
+        # Have 1 thread for sending heartbeat messages (Optional - Might be required).
+        # Have 1 thread for validating the connections.
+        # Have 1 thread for everything else.
+        try:
+            if not gcs_conn.valid_connection():
+                try:
+                    gcs_conn.retry_connection()
+                except Exception as e:
+                    print(e)
+                    begin_flight_termination(latitude, longitude)
+            msg = gcs_conn.conn.recv_match()
+            if msg:
+                gcs_conn.check_heartbeat(msg)
+        except KeyboardInterrupt:
+            print("Exiting...")
+            autopilot_conn.conn.close()
+            gcs_conn.conn.close()
+            sys.exit(1)
 
 
 def get_command_line_args():

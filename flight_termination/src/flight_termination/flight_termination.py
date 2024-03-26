@@ -83,6 +83,11 @@ def pre_flight_termination():
     pass
 
 
+def begin_flight_termination():
+    pre_flight_termination()
+    # Set flight mode to stable.
+
+
 def connect_to_gcs(connection_string, baudrate):
     return connect_to_mavlink_system(connection_string, baudrate, 0, 0)
 
