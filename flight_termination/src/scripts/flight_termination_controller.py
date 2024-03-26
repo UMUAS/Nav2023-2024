@@ -40,16 +40,23 @@ def main():
         # Have 1 thread for receiving messages.
         # Have 1 thread for sending heartbeat messages (Optional - Might be required).
         # Have 1 thread for validating the connections.
+        # Have 1 thread for validating status of components on the drone.
         # Have 1 thread for everything else.
         try:
-            # Do this for gcs_conn and autopilot_conn: Losing connection to both systems should
-            # trigger flight termination?
+            # Do this for gcs_conn and autopilot_conn: Losing connection with the autopilot
+            # or the GCS should trigger flight termination?
             if not gcs_conn.valid_connection():
                 try:
                     gcs_conn.retry_connection()
                 except Exception as e:
                     print(e)
                     begin_flight_termination(latitude, longitude)
+
+            # Check that the components on the drone are still in an ideal state.
+            if not autopilot_conn.valid_components():
+                begin_flight_termination(latitude, longitude)
+
+            # Get messages.
             msg = gcs_conn.conn.recv_match()
             if msg:
                 gcs_conn.check_heartbeat(msg)

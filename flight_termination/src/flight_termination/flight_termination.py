@@ -52,6 +52,9 @@ class Connection(ABC):
             return True
         return False
 
+    def valid_components(self):
+        pass
+
     def get_msg(self):
         msg = self.conn.recv_match()
         return msg
