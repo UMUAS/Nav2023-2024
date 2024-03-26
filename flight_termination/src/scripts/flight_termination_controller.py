@@ -1,77 +1,43 @@
 import argparse
+import configparser
 import sys
 import time
 
 # Add parent directory to Python path at runtime to allow importing packages.
 sys.path.append("../")
 
-
-from pymavlink import mavutil
-
+from flight_termination.flight_termination import AutopilotConnection, GCSConnection
 from flight_termination.utils import (
-    FLIGHT_CONTROLLER_BAUDRATE,
-    FLIGHT_CONTROLLER_SERIAL_PORT,
+    AUTOPILOT_BAUDRATE,
+    AUTOPILOT_SERIAL_PORT,
+    GCS_BAUDRATE,
+    GCS_SERIAL_PORT,
     valid_latitude_and_longitude,
 )
 
 
 def main():
     latitude, longitude = get_command_line_args()
-    conn_flight_controller = connect_to_flight_controller(
-        FLIGHT_CONTROLLER_SERIAL_PORT, FLIGHT_CONTROLLER_BAUDRATE
-    )
+    autopilot_conn = AutopilotConnection(AUTOPILOT_SERIAL_PORT, AUTOPILOT_BAUDRATE)
 
-    if conn_flight_controller:
-        # Make connection to the GCS.
-        # conn_gcs = connect_to_gcs()
+    if autopilot_conn:
+        # Wait for a heartbeat from the autopilot before sending commands.
+        autopilot_conn.conn.wait_heartbeat()
+
+        gcs_conn = GCSConnection(GCS_SERIAL_PORT, GCS_BAUDRATE)
+        # Wait for a heartbeat from the GCS before sending commands.
+        gcs_conn.conn.wait_heartbreat()
 
         while True:
             try:
-                # Do this every so often?
-                conn_flight_controller.wait_heartbeat()
-                print(
-                    f"Heartbeat from system (system {conn_flight_controller.target_system} "
-                    f"component {conn_flight_controller.target_component})"
-                )
+                msg = autopilot_conn.conn.recv_match()
+                if msg:
+                    autopilot_conn.check_heartbeat(msg)
+
             except KeyboardInterrupt:
                 print("Exiting...")
-                conn_flight_controller.close()
+                autopilot_conn.close()
                 sys.exit(1)
-
-
-def connect_to_gcs(connection_string, baudrate):
-    return connect_to_mavlink_system(connection_string, baudrate, 0, 0)
-
-
-def connect_to_flight_controller(connection_string, baudrate):
-    return connect_to_mavlink_system(connection_string, baudrate, 0, 0)
-
-
-def connect_to_mavlink_system(connection_string, baudrate, max_retries=0, retry_delay=0):
-    """Establish and return a connection to a MAVLink system (e.g., flight controller, GCS).
-
-    Args:
-        connection_string (str): The channel for communication (e.g., serial port, network address).
-        baudrate (int): Number of bits per second transferred over the connection line.
-        max_retries (int): Number of additional times we will attempt to make a connection.
-        retry_delay (int): Time between in each retry attempt.
-
-    Returns:
-        mavutil.mavlink_connection or None: The MAVLink connection object or None if unsuccessful.
-    """
-    num_tries = max_retries + 1
-    for attempt in range(1, num_tries + 1):
-        try:
-            connection = mavutil.mavlink_connection(connection_string, baud=baudrate)
-            print("Connected to the flight controller.")
-            return connection
-        except Exception as e:
-            print(f"Error establishing connection (Attempt {attempt}/{num_tries}): {e}")
-            if attempt < num_tries:
-                print(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-    print("Connection with the flight controller could not be established.")
-    return None
 
 
 def get_command_line_args():
