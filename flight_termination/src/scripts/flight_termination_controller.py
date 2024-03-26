@@ -42,6 +42,8 @@ def main():
         # Have 1 thread for validating the connections.
         # Have 1 thread for everything else.
         try:
+            # Do this for gcs_conn and autopilot_conn: Losing connection to both systems should
+            # trigger flight termination?
             if not gcs_conn.valid_connection():
                 try:
                     gcs_conn.retry_connection()
