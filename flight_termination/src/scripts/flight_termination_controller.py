@@ -10,6 +10,7 @@ from flight_termination.flight_termination import (
     AutopilotConnection,
     GCSConnection,
     begin_flight_termination,
+    handle_connection_health,
 )
 from flight_termination.utils import (
     AUTOPILOT_BAUDRATE,
@@ -61,15 +62,6 @@ def main():
             autopilot_conn.conn.close()
             gcs_conn.conn.close()
             sys.exit(1)
-
-
-def handle_connection_health(conn):
-    if not conn.is_valid_connection():
-        try:
-            conn.retry_connection()
-        except Exception as e:
-            print(e)
-            begin_flight_termination()
 
 
 def get_command_line_args():

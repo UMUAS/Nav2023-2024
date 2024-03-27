@@ -89,6 +89,15 @@ def begin_flight_termination():
     # Set flight mode to stable.
 
 
+def handle_connection_health(conn):
+    if not conn.is_valid_connection():
+        try:
+            conn.retry_connection()
+        except Exception as e:
+            print(e)
+            begin_flight_termination()
+
+
 def connect_to_gcs(connection_string, baudrate):
     return connect_to_mavlink_system(connection_string, baudrate, 0, 0)
 
