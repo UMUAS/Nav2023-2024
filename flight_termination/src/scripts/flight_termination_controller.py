@@ -45,18 +45,14 @@ def main():
         try:
             # Do this for gcs_conn and autopilot_conn: Losing connection with the autopilot
             # or the GCS should trigger flight termination?
-            if not gcs_conn.valid_connection():
-                try:
-                    gcs_conn.retry_connection()
-                except Exception as e:
-                    print(e)
-                    begin_flight_termination(latitude, longitude)
+            handle_connection_health(autopilot_conn)
+            handle_connection_health(gcs_conn)
 
             # Check that the components on the drone are still in an ideal state.
             if not autopilot_conn.valid_components():
-                begin_flight_termination(latitude, longitude)
+                begin_flight_termination()
 
-            # Get messages.
+            # Receive messages from the ground control station.
             msg = gcs_conn.conn.recv_match()
             if msg:
                 gcs_conn.check_heartbeat(msg)
@@ -65,6 +61,15 @@ def main():
             autopilot_conn.conn.close()
             gcs_conn.conn.close()
             sys.exit(1)
+
+
+def handle_connection_health(conn):
+    if not conn.is_valid_connection():
+        try:
+            conn.retry_connection()
+        except Exception as e:
+            print(e)
+            begin_flight_termination()
 
 
 def get_command_line_args():

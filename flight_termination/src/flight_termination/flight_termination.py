@@ -3,9 +3,7 @@ from abc import ABC, abstractmethod
 
 from pymavlink import mavutil
 
-from .utils import HEARTBEAT
-
-from .utils import AUTOPILOT_HEARTBEAT_TIMEOUT, GCS_HEARTBEAT_TIMEOUT, HEARTBEAT_TIMEOUT
+from .utils import AUTOPILOT_HEARTBEAT_TIMEOUT, GCS_HEARTBEAT_TIMEOUT, HEARTBEAT, HEARTBEAT_TIMEOUT
 
 
 class Connection(ABC):
@@ -44,7 +42,7 @@ class Connection(ABC):
                 return
         raise ConnectionError("Failed to reestablish the connection.")
 
-    def valid_connection(self):
+    def is_valid_connection(self):
         """Check that we have received a heartbeat within the last `heartbeat_timeout`
         seconds."""
         current_time = time.time()
