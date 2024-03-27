@@ -3,7 +3,13 @@ from abc import ABC, abstractmethod
 
 from pymavlink import mavutil
 
-from .utils import AUTOPILOT_HEARTBEAT_TIMEOUT, GCS_HEARTBEAT_TIMEOUT, HEARTBEAT, HEARTBEAT_TIMEOUT
+from .utils import (
+    AUTOPILOT_HEARTBEAT_TIMEOUT,
+    GCS_HEARTBEAT_TIMEOUT,
+    HEARTBEAT,
+    HEARTBEAT_TIMEOUT,
+    SYS_STATUS,
+)
 
 
 class Connection(ABC):
@@ -78,6 +84,13 @@ class GCSConnection(Connection):
 
     def reconnect(self):
         self.conn = connect_to_gcs(self.conn_string, self.baudrate)
+
+
+def process_autopilot_msg(msg):
+    if msg == SYS_STATUS:
+        pass
+    if msg == "":
+        pass
 
 
 def begin_flight_termination():

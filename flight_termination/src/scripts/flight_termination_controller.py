@@ -11,6 +11,7 @@ from flight_termination.flight_termination import (
     GCSConnection,
     begin_flight_termination,
     handle_connection_health,
+    process_autopilot_msg,
 )
 from flight_termination.utils import (
     AUTOPILOT_BAUDRATE,
@@ -54,9 +55,15 @@ def main():
                 begin_flight_termination()
 
             # Receive messages from the ground control station.
-            msg = gcs_conn.conn.recv_match()
-            if msg:
-                gcs_conn.check_heartbeat(msg)
+            gcs_msg = gcs_conn.conn.recv_match()
+            if gcs_msg:
+                gcs_conn.check_heartbeat(gcs_msg)
+
+            # Receive messages from the autopilot.
+            autopilot_msg = autopilot_conn.conn.recv_match()
+            if autopilot_msg:
+                autopilot_conn.check_heartbeat(autopilot_msg)
+                process_autopilot_msg(autopilot_msg)
         except KeyboardInterrupt:
             print("Exiting...")
             autopilot_conn.conn.close()
