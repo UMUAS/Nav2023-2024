@@ -2,6 +2,8 @@
 
 # Entrypoint for flight termination on the nano.
 
+set -e
+
 echo "Run flight termination script"
 python -m flight_termination_controller.py
 
