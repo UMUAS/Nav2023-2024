@@ -3,9 +3,6 @@ import argparse
 # import configparser
 import sys
 
-# Add parent directory to Python path at runtime to allow importing packages.
-sys.path.append("../")
-
 from flight_termination.flight_termination import (
     AutopilotConnection,
     GCSConnection,

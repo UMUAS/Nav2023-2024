@@ -1,9 +1,4 @@
-import sys
 import unittest
-
-# Add parent directory to Python path at runtime to allow importing packages.
-sys.path.append("../")
-
 
 from pymavlink import mavutil
 from src.flight_termination.flight_termination import AutopilotConnection, GCSConnection
