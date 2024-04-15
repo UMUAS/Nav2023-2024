@@ -39,7 +39,11 @@ Contains code for handling Flight Termination. This includes code that will run 
     python -m pip install -r requirements.txt
     ```
 
-5. Add a system environment variable called PYTHONPATH to allow importing modules from our custom packages.
+5. Run this command to add a system environment variable called PYTHONPATH to allow importing our custom packages:
+    - Note: To have this setup for all terminal sessions, add the below command to your shell configuration file called `~/.bashrc` or `~/.bash_profile` for Bash, or `~/.zshrc` for Zsh. For example:
+        1. Open the configuration file: `vim ~/.bash_profile`
+        2. Add the command below to the end of the file, then save the file.
+        3. Restart your terminal or apply the changes to the current shell: `source ~/.bash_profile`
 
     ```bash
     export PYTHONPATH="${PYTHONPATH}:/ABSOLUTE/PATH/TO/Nav2023-2024/flight_termination/src/"
