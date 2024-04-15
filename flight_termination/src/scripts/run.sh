@@ -5,7 +5,7 @@
 set -e
 
 echo "Run flight termination script"
-python -m flight_termination_controller.py
+python flight_termination_controller.py
 
 # Check for SSH connection to GCS. If we never connect then?
 # If we connected initially and we lose connection, set an environment varibale
