@@ -48,11 +48,11 @@ def main():
         # Threads:
         # Main thread:
         # Handles received-message queue/buffer.
+        # Have 1 thread for sending heartbeat messages.
         # Validating status of components on the drone.
 
         # Have 1 thread for receiving messages from the Autopilot.
         # Have 1 thread for receiving messages from the GCS.
-        # Have 1 thread for sending heartbeat messages.
         # Have 1 thread for validating and retrying if necessary, the connection to
         # the Autopilot and GCS.
 
