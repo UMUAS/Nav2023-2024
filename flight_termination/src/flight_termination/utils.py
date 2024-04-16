@@ -1,3 +1,6 @@
+import json
+import sys
+
 MIN_LATITUDE = -90
 MAX_LATITUDE = 90
 MIN_LONGITUDE = -180
@@ -5,11 +8,6 @@ MAX_LONGITUDE = 180
 
 AUTOPILOT = "Autopilot"
 GCS = "GCS"
-
-AUTOPILOT_SERIAL_PORT = "/dev/ttyTHS1"
-AUTOPILOT_BAUDRATE = 115200
-GCS_SERIAL_PORT = ""
-GCS_BAUDRATE = 0
 
 HEARTBEAT = "HEARTBEAT"
 AUTOPILOT_HEARTBEAT_TIMEOUT = 5
@@ -25,3 +23,16 @@ def valid_latitude_and_longitude(lat, lon):
     if lon < MIN_LONGITUDE or lon > MAX_LONGITUDE:
         return False
     return True
+
+
+def load_config():
+    with open("../config.json", "r") as file:
+        config = json.load(file)
+
+    # Check latitude and longitude.
+    latitude, longitude = config["latitude"], config["longitude"]
+    if not valid_latitude_and_longitude(latitude, longitude):
+        print("Invalid latitude and/or longitude.")
+        sys.exit(1)
+
+    return config
