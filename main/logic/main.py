@@ -7,6 +7,7 @@ from object_detection.src.application import script as ObjectDetection
 updated_location = threading.Condition()
 image_set = []
 
+
 def main(self):
     # add more later
     while True:
@@ -22,6 +23,7 @@ def create_pipe(target_class):
     process = multiprocessing.Process(target=target_class, args=(sub_conn,))
     return process, main_conn
 
+
 def await_image(object_detection_process, object_detection_conn):
     while True:
         with updated_location:
@@ -36,9 +38,9 @@ def await_image(object_detection_process, object_detection_conn):
         direction = object_detection_conn.recv()
 
 
-
 def move(direction):
-    # move
+    # do stuff
+    pass
 
 
 if __name__ == '__main__':
