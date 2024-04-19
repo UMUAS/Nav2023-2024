@@ -1,3 +1,4 @@
+import asyncio
 import time
 from abc import ABC, abstractmethod
 
@@ -9,7 +10,9 @@ from .utils import (
     GCS,
     GCS_HEARTBEAT_TIMEOUT,
     HEARTBEAT,
+    HEARTBEAT_SEND_RATE_HZ,
     HEARTBEAT_TIMEOUT,
+    MESSAGE_CHECK_INTERVAL,
     SYS_STATUS,
 )
 
@@ -101,10 +104,19 @@ class GCSConnection(ClientConnection):
         self.conn = connect_to_gcs(self.conn_string, self.baudrate)
 
 
-def send_heartbeat(conn):
+async def heartbeat_loop(conn):
     while True:
+        await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
         conn.send_heartbeat_msg()
-        time.sleep(1)
+
+
+async def receive_loop(conn):
+    while True:
+        await asyncio.sleep(MESSAGE_CHECK_INTERVAL)
+        message = conn.get_msg()
+        if message:
+            message = message.to_dict()
+            print(message)
 
 
 def process_autopilot_msg(msg):

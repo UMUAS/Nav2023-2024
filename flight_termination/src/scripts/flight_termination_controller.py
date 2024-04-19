@@ -8,7 +8,7 @@ from flight_termination.flight_termination import (
     begin_flight_termination,
     handle_connection_health,
     process_autopilot_msg,
-    send_heartbeat,
+    heartbeat_loop,
 )
 from flight_termination.utils import load_config
 
@@ -26,9 +26,6 @@ def main():
     # Wait for a heartbeat from the autopilot before sending commands.
     autopilot_conn.conn.wait_heartbeat()
     print("Initial heartbeat received from the autopilot.")
-
-    # Send heartbeat messages to the autopilot.
-    send_heartbeat(autopilot_conn)
 
     while True:
         # Threads:
