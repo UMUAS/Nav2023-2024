@@ -5,7 +5,6 @@ import sys
 
 from flight_termination.flight_termination import (
     AutopilotConnection,
-    GCSConnection,
     begin_flight_termination,
     handle_connection_health,
     process_autopilot_msg,
@@ -28,17 +27,8 @@ def main():
     autopilot_conn.conn.wait_heartbeat()
     print("Initial heartbeat received from the autopilot.")
 
-    gcs_conn_string, gcs_baudrate = config["gcs_conn_string"], config["gcs_baudrate"]
-    gcs_conn = GCSConnection(gcs_conn_string, gcs_baudrate)
-    if not gcs_conn.conn:
-        sys.exit(1)
-    # Wait for a heartbeat from the GCS before sending commands.
-    gcs_conn.conn.wait_heartbreat()
-    print("Initial heartbeat received from the GCS.")
-
-    # Send heartbeat messages to the autopilot and GCS.
+    # Send heartbeat messages to the autopilot.
     send_heartbeat(autopilot_conn)
-    send_heartbeat(gcs_conn)
 
     while True:
         # Threads:
@@ -48,24 +38,17 @@ def main():
         # Validating status of components on the drone.
 
         # Have 1 thread for receiving messages from the Autopilot.
-        # Have 1 thread for receiving messages from the GCS.
         # Have 1 thread for validating and retrying if necessary, the connection to
-        # the Autopilot and GCS.
+        # the Autopilot.
 
         # asyncio vs threading.
 
         try:
             # handle_connection_health(autopilot_conn)
-            # handle_connection_health(gcs_conn)
 
             # # Check that the components on the drone are still in an ideal state.
             # if not autopilot_conn.valid_components():
             #     begin_flight_termination()
-
-            # Receive messages from the ground control station.
-            gcs_msg = gcs_conn.conn.recv_match()
-            if gcs_msg:
-                gcs_conn.check_heartbeat(gcs_msg)
 
             # Receive messages from the autopilot.
             autopilot_msg = autopilot_conn.conn.recv_match()
@@ -76,7 +59,6 @@ def main():
         except KeyboardInterrupt:
             print("Exiting...")
             autopilot_conn.conn.close()
-            gcs_conn.conn.close()
             sys.exit(1)
 
 
