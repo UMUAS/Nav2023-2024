@@ -46,22 +46,16 @@ class ObjectDetection:
         for box in bounding_boxes:
             x1, y1, x2, y2, _, _ = box
             distance = (x2 - x1)
-            self.image_array.append(distance)
+            if distance > largest_distance:
+                largest_distance = distance
 
-        if len(self.image_array) > 10:
-            largest_distance = self.image_array[-1] - self.image_array[0]
-            # Update direction based on area comparison
-            direction = None
-            print(f"new: {largest_distance}, old: {self.current_largest_distance}")
-            if largest_distance > 0:
-                self.current_largest_distance = largest_distance
-                direction = "moving closer"
-            else:
-                direction = "moving away"
+        # Update direction based on area comparison
+        direction = None
+        print(f"new: {largest_distance}, old: {self.current_largest_distance}")
+        if largest_distance > self.current_largest_distance:
+            self.current_largest_distance = largest_distance
+            direction = "moving closer"
+        else:
+            direction = "moving away"
 
-            self.images += 1
-            if self.images == 200:
-                self.images = 0
-                self.current_largest_distance = 0
-
-            return direction
+        return direction
