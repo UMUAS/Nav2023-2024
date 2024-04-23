@@ -1,47 +1,48 @@
-import argparse
+"""This script runs on the drone and serves as the process waiting to activate
+flight termination."""
+
+import asyncio
 import sys
 
-# Add parent directory to Python path at runtime to allow importing packages.
-sys.path.append("../")
+from dotenv import dotenv_values, load_dotenv
+
+from flight_termination.flight_termination import (
+    AutopilotConnection,
+    begin_flight_termination,
+    handle_connection_health,
+    heartbeat_loop,
+    process_autopilot_msg,
+    receive_loop,
+)
+
+# Reload environment variables on startup to avoid caching them.
+load_dotenv(dotenv_path=".env", verbose=True, override=True)
+config = dotenv_values(".env")
 
 
-from flight_termination.utils import valid_latitude_and_longitude
+async def main():
+    try:
+        autopilot_conn_string, autopilot_baudrate = (
+            config["AUTOPILOT_CONN_STRING"],
+            config["AUTOPILOT_BAUDRATE"],
+        )
+        autopilot_conn = AutopilotConnection(autopilot_conn_string, autopilot_baudrate)
+        if not autopilot_conn.conn:
+            sys.exit(1)
+        # Wait for a heartbeat from the autopilot before sending commands.
+        autopilot_conn.conn.wait_heartbeat()
+        print("Initial heartbeat received from the autopilot.")
 
+        receive_task = asyncio.create_task(receive_loop())
+        heartbeat_task = asyncio.create_task(heartbeat_loop())
 
-def main():
-    latitude, longitude = get_command_line_args()
+        await asyncio.gather(receive_task, heartbeat_task)
 
-
-def get_command_line_args():
-    parser = argparse.ArgumentParser(
-        description="""This script runs on the drone and serves as the process waiting to activate
-        flight termination.
-
-        Example usage:
-        python flight_termination_controller.py --lat 37 --lon -122
-        """
-    )
-    # Define script arguments.
-    parser.add_argument(
-        "--lat", dest="latitude", type=int, required=True, help="Latitude of the location to land."
-    )
-    parser.add_argument(
-        "--lon",
-        dest="longitude",
-        type=int,
-        required=True,
-        help="Longitude of the location to land.",
-    )
-
-    arguments = parser.parse_args()
-    latitude, longitude = arguments.latitude, arguments.longitude
-
-    if not valid_latitude_and_longitude(latitude, longitude):
-        print("Invalid latitude and/or longitude.")
+    except KeyboardInterrupt:
+        print("Exiting...")
+        autopilot_conn.conn.close()
         sys.exit(1)
-
-    return latitude, longitude
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
