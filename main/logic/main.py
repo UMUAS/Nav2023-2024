@@ -3,16 +3,31 @@ import multiprocessing
 import time
 import threading
 import sys
-sys.path.append("../../object_detection/src/")
+import queue
+import serial
+
+sys.path.append("../../object_detection/src/application/")
+sys.path.append("../src/")
 
 try:
-    from application.script import ObjectDetection
+    # Get and print the current working directory
+    for path in sys.path:
+        print(path)
+    from script import ObjectDetection
 except ImportError:
     print("Error importing ObjectDetection class")
     sys.exit(1)
 
+try:
+    from resources.utils import PORT, BAUD_RATE, MISSION_FILE
+except ImportError:
+    print("Error importing config file")
+    sys.exit(1)
+
 updated_location = threading.Condition()
 image_set = []
+messages = queue.Queue()
+
 
 def main(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -28,6 +43,54 @@ def main(video_path):
         time.sleep(0.1)  # Control the frame rate
 
     cap.release()
+
+
+def mission_plan():
+    pixhawk_conn = establish_connection()
+
+    print(f"Connected to Pixhawk on {PORT}")
+
+    read_mission()
+    print("read plan")
+
+    send_command(pixhawk_conn, "ARM; SET_HOME")
+
+    while not messages.empty():
+        send_command(pixhawk_conn, messages.get())
+
+    send_command(pixhawk_conn, "LAND; SAVE_LOG")
+
+
+def send_command(conn, command):
+    print(f"Sending command: {command}")
+    conn.write(command.encode())
+    response = conn.readline().decode().strip()
+    print(f"Received: {response}")
+
+
+def read_mission():
+    try:
+        with open(MISSION_FILE, 'r') as file:
+            lines = file.readlines()
+            for line in lines:
+                lat, lon, alt = line.strip().split(',')
+
+                command = f"GOTO {lat.strip()} {lon.strip()} {alt.strip()}"
+                messages.put(command)
+    except FileNotFoundError:
+        print("file was not found")
+        exit(1)
+    except Exception as e:
+        print(f"error: {e}")
+        exit(1)
+
+
+def establish_connection():
+    try:
+        return serial.Serial(PORT, BAUD_RATE, timeout=1)
+    except serial.SerialException as e:
+        print(f"Error: {e}")
+
 
 def start_object_detection(conn):
     object_detection = ObjectDetection(conn)
