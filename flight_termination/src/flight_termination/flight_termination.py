@@ -87,10 +87,10 @@ class AutopilotConnection(ClientConnection):
 
     def __init__(self, conn_string, baudrate=None):
         super().__init__(conn_string, baudrate)
-        self.conn = connect_to_autopilot(conn_string, baudrate)
+        self.conn = connection_to_autopilot(conn_string, baudrate)
 
     def reconnect(self):
-        self.conn = connect_to_autopilot(self.conn_string, self.baudrate)
+        self.conn = connection_to_autopilot(self.conn_string, self.baudrate)
 
 
 class GCSConnection(ClientConnection):
@@ -98,10 +98,10 @@ class GCSConnection(ClientConnection):
 
     def __init__(self, conn_string, baudrate=None):
         super().__init__(conn_string, baudrate)
-        self.conn = connect_to_gcs(conn_string, baudrate)
+        self.conn = connection_to_gcs(conn_string, baudrate)
 
     def reconnect(self):
-        self.conn = connect_to_gcs(self.conn_string, self.baudrate)
+        self.conn = connection_to_gcs(self.conn_string, self.baudrate)
 
 
 async def heartbeat_loop(conn):
@@ -153,15 +153,15 @@ def handle_connection_health(conn):
             begin_flight_termination()
 
 
-def connect_to_autopilot(conn_string, baudrate):
-    return connect_to_mavlink_system(AUTOPILOT, conn_string, baudrate, 0, 0)
+def connection_to_autopilot(conn_string, baudrate):
+    return connection_to_mavlink_system(AUTOPILOT, conn_string, baudrate, 0, 0)
 
 
-def connect_to_gcs(conn_string, baudrate):
-    return connect_to_mavlink_system(GCS, conn_string, baudrate, 0, 0)
+def connection_to_gcs(conn_string, baudrate):
+    return connection_to_mavlink_system(GCS, conn_string, baudrate, 0, 0)
 
 
-def connect_to_mavlink_system(system_name, conn_string, baudrate, max_retries=0, retry_delay=0):
+def connection_to_mavlink_system(system_name, conn_string, baudrate, max_retries=0, retry_delay=0):
     """Establish and return a connection to a MAVLink system (e.g., flight controller, GCS).
 
     Args:
