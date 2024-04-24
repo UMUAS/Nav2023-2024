@@ -77,6 +77,7 @@ class ClientConnection(ABC):
         )
 
     def valid_components(self):
+        # TODO
         pass
 
     def get_msg(self):
@@ -84,6 +85,7 @@ class ClientConnection(ABC):
         return msg
 
     def request_messages(self):
+        # TODO
         pass
 
 
@@ -163,15 +165,6 @@ def terminate_flight():
 
 def post_flight_termination():
     pass
-
-
-def handle_connection_health(conn):
-    if not conn.is_valid_connection():
-        try:
-            conn.retry_connection()
-        except Exception as e:
-            print(e)
-            begin_flight_termination()
 
 
 def connection_to_autopilot(conn_string, baudrate):

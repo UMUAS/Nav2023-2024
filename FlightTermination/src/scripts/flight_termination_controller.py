@@ -8,6 +8,7 @@ import sys
 from dotenv import load_dotenv
 from flight_termination.flight_termination import (
     AutopilotConnection,
+    begin_flight_termination,
     heartbeat_loop,
     receive_msg_loop,
     validate_connection_loop,
@@ -38,18 +39,18 @@ async def main():
         heartbeat_task = asyncio.create_task(heartbeat_loop(autopilot_conn))
         validate_connection_task = asyncio.create_task(validate_connection_loop(autopilot_conn))
 
-        await asyncio.gather(receive_task, heartbeat_task, validate_connection_task)
+        try:
+            await asyncio.gather(receive_task, heartbeat_task, validate_connection_task)
+        except ConnectionError as e:
+            # We lost connection and could not re-establish.
+            print(e)
+            if e == "Failed to re-establish the connection.":
+                begin_flight_termination()
 
     except KeyboardInterrupt:
         print("Exiting...")
         autopilot_conn.conn.close()
         sys.exit(1)
-
-    except ConnectionError as e:
-        # We lost connection and could not re-establish.
-        print(e)
-        if e == "Failed to re-establish the connection.":
-            sys.exit(1)
 
 
 if __name__ == "__main__":
