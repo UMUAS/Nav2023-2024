@@ -12,7 +12,6 @@ from .utils import (
     HEARTBEAT,
     HEARTBEAT_SEND_RATE_HZ,
     HEARTBEAT_TIMEOUT,
-    MESSAGE_CHECK_INTERVAL,
     SYS_STATUS,
 )
 
@@ -22,6 +21,9 @@ class ServerConnection:
 
 
 class ClientConnection(ABC):
+    """A connection that acts as a client, receiving data from a flight controller or other
+    mavlink system."""
+
     heartbeat_timeout = None
 
     def __init__(self, conn_string, baudrate=None):
@@ -55,7 +57,7 @@ class ClientConnection(ABC):
             if msg:
                 self.update_last_heartbeat()
                 return
-        raise ConnectionError("Failed to reestablish the connection.")
+        raise ConnectionError("Failed to re-establish the connection.")
 
     def is_valid_connection(self):
         """Check that we have received a heartbeat within the last `heartbeat_timeout`
@@ -81,6 +83,9 @@ class ClientConnection(ABC):
         msg = self.conn.recv_match()
         return msg
 
+    def request_messages(self):
+        pass
+
 
 class AutopilotConnection(ClientConnection):
     heartbeat_timeout = AUTOPILOT_HEARTBEAT_TIMEOUT
@@ -104,25 +109,41 @@ class GCSConnection(ClientConnection):
         self.conn = connection_to_gcs(self.conn_string, self.baudrate)
 
 
-async def heartbeat_loop(conn):
+async def heartbeat_loop(conn: ClientConnection):
     while True:
-        await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
-        conn.send_heartbeat_msg()
+        try:
+            conn.send_heartbeat_msg()
+            await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
+        except Exception as e:
+            print(e)
 
 
-async def receive_loop(conn):
+async def receive_msg_loop(conn: ClientConnection):
     while True:
-        await asyncio.sleep(MESSAGE_CHECK_INTERVAL)
-        message = conn.get_msg()
-        if message:
-            message = message.to_dict()
-            print(message)
+        try:
+            message = await asyncio.get_event_loop().run_in_executor(None, conn.get_msg)
+            if message:
+                message = message.to_dict()
+                print(message)
+                asyncio.create_task(process_autopilot_msg(message, conn))
+        except Exception as e:
+            print(e)
 
 
-def process_autopilot_msg(msg):
-    if msg == SYS_STATUS:
+async def validate_connection_loop(conn: ClientConnection):
+    while True:
+        if not conn.is_valid_connection():
+            conn.retry_connection()
+        asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
+
+
+async def process_autopilot_msg(message, conn: ClientConnection):
+    # Is the drone still in a valid state?
+    # Did we receive a heartbeat message?
+    conn.check_heartbeat(message)
+    if message == SYS_STATUS:
         pass
-    if msg == "":
+    if message == "":
         pass
 
 
