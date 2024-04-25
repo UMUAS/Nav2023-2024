@@ -79,7 +79,7 @@ class ClientConnection(ABC):
             0,
         )
 
-    def valid_components(self):
+    def validate_components(self):
         # TODO
         pass
 
@@ -88,8 +88,8 @@ class ClientConnection(ABC):
         return msg
 
     def request_messages(self):
-        # TODO
-        pass
+        request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
+        request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 2)
 
 
 class AutopilotConnection(ClientConnection):
@@ -150,6 +150,35 @@ async def process_autopilot_msg(message, conn: ClientConnection):
         pass
     if message == "":
         pass
+
+
+def request_message_interval(
+    conn: mavutil.mavlink_connection, message_id: int, frequency_hz: float
+):
+    """
+    Request MAVLink message in a desired frequency,
+    documentation for SET_MESSAGE_INTERVAL:
+        https://mavlink.io/en/messages/common.html#MAV_CMD_SET_MESSAGE_INTERVAL
+
+    Args:
+        conn (mavutil.mavlink_connection): MAVLink connection object
+        message_id (int): MAVLink message ID
+        frequency_hz (float): Desired frequency in Hz
+    """
+    conn.mav.command_long_send(
+        conn.target_system,
+        conn.target_component,
+        mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+        0,
+        message_id,  # The MAVLink message ID
+        1e6
+        / frequency_hz,  # The interval between two messages in microseconds. Set to -1 to disable and 0 to request default rate.
+        0,
+        0,
+        0,
+        0,  # Unused parameters
+        0,  # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
+    )
 
 
 def begin_flight_termination():
