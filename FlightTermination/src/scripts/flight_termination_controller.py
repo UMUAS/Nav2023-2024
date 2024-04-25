@@ -2,6 +2,9 @@
 flight termination."""
 
 import asyncio
+import io
+import logging
+import logging.config
 import os
 import sys
 
@@ -13,9 +16,16 @@ from flight_termination.flight_termination import (
     receive_msg_loop,
     validate_connection_loop,
 )
+from flight_termination.utils import get_logging_config
 
 # Reload environment variables on startup to avoid caching them.
 load_dotenv(verbose=True, override=True)
+
+# Configure logging.
+logging_config = get_logging_config()
+logging.config.fileConfig(io.StringIO(logging_config), disable_existing_loggers=False)
+
+logger = logging.getLogger()
 
 
 async def main():
@@ -29,7 +39,7 @@ async def main():
 
         # Wait for a heartbeat from the autopilot before sending commands.
         autopilot_conn.conn.wait_heartbeat()
-        print("Initial heartbeat received from the autopilot.")
+        logger.info("Initial heartbeat received from the autopilot.")
 
         # Request messages from the flight controller.
         autopilot_conn.request_messages()
@@ -43,12 +53,12 @@ async def main():
             await asyncio.gather(receive_task, heartbeat_task, validate_connection_task)
         except ConnectionError as e:
             # We lost connection and could not re-establish.
-            print(e)
+            logger.error(e)
             if e == "Failed to re-establish the connection.":
                 begin_flight_termination()
 
     except KeyboardInterrupt:
-        print("Exiting...")
+        logger.info("Exiting...")
         autopilot_conn.conn.close()
         sys.exit(1)
 
