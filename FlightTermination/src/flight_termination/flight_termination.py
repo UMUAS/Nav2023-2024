@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from abc import ABC, abstractmethod
 
@@ -14,6 +15,8 @@ from .utils import (
     HEARTBEAT_TIMEOUT,
     SYS_STATUS,
 )
+
+logger = logging.getLogger()
 
 
 class ServerConnection:
@@ -38,7 +41,7 @@ class ClientConnection(ABC):
 
     def update_last_heartbeat(self):
         self.last_heartbeat = time.time()
-        print(
+        logger.info(
             f"Heartbeat from system: {self.conn.target_system} "
             f"component: {self.conn.target_component}."
         )
@@ -117,7 +120,7 @@ async def heartbeat_loop(conn: ClientConnection):
             conn.send_heartbeat_msg()
             await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
         except Exception as e:
-            print(e)
+            logger.exception(e)
 
 
 async def receive_msg_loop(conn: ClientConnection):
@@ -126,10 +129,10 @@ async def receive_msg_loop(conn: ClientConnection):
             message = await asyncio.get_event_loop().run_in_executor(None, conn.get_msg)
             if message:
                 message = message.to_dict()
-                print(message)
+                logger.info(message)
                 asyncio.create_task(process_autopilot_msg(message, conn))
         except Exception as e:
-            print(e)
+            logger.exception(e)
 
 
 async def validate_connection_loop(conn: ClientConnection):
@@ -193,12 +196,12 @@ def connection_to_mavlink_system(system_name, conn_string, baudrate, max_retries
     for attempt in range(1, num_tries + 1):
         try:
             connection = mavutil.mavlink_connection(conn_string, baud=baudrate)
-            print(f"Connected to the {system_name}.")
+            logger.info(f"Connected to the {system_name}.")
             return connection
         except Exception as e:
-            print(f"Error establishing connection (Attempt {attempt}/{num_tries}): {e}")
+            logger.exception(f"Error establishing connection (Attempt {attempt}/{num_tries}): {e}")
             if attempt < num_tries:
-                print(f"Retrying in {retry_delay} seconds...")
+                logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
-    print(f"Connection to the {system_name} could not be established.")
+    logger.error(f"Connection to the {system_name} could not be established.")
     return None
