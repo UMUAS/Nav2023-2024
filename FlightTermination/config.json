@@ -1,8 +1,0 @@
-{
-    "latitude": "0",
-    "longitude": "0",
-    "autopilot_conn_string": "/dev/ttyTHS1",
-    "autopilot_baudrate": 115200,
-    "gcs_conn_string": "",
-    "gcs_baudrate": 0
-}

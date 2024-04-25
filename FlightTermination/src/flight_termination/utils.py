@@ -1,6 +1,4 @@
-import json
 import os
-import sys
 
 import jinja2
 
@@ -31,31 +29,17 @@ def valid_latitude_and_longitude(lat, lon):
     return True
 
 
-def load_config():
-    with open("../config.json", "r") as file:
-        config = json.load(file)
-
-    # Check latitude and longitude.
-    latitude, longitude = config["latitude"], config["longitude"]
-    if not valid_latitude_and_longitude(latitude, longitude):
-        print("Invalid latitude and/or longitude.")
-        sys.exit(1)
-
-    return config
-
-
 def get_logging_config():
     nav_dir = get_nav_dir()
 
     # Load the logging configuration template file.
     template_loader = jinja2.FileSystemLoader(searchpath=nav_dir)
     template_env = jinja2.Environment(loader=template_loader)
-    template = template_env.get_template("logging.conf.tpl")
+    template = template_env.get_template("logging.conf")
 
-    # Define your log file variable
     log_file_abs_path = os.path.join(nav_dir, "app.log")
 
-    # Render the template with variables
+    # Render the template with variables.
     logging_config = template.render(log_file_path=log_file_abs_path)
     return logging_config
 
