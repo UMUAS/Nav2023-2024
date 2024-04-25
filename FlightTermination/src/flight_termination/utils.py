@@ -35,7 +35,7 @@ def get_logging_config():
     # Load the logging configuration template file.
     template_loader = jinja2.FileSystemLoader(searchpath=nav_dir)
     template_env = jinja2.Environment(loader=template_loader)
-    template = template_env.get_template("logging.conf.tpl")
+    template = template_env.get_template("logging.conf")
 
     log_file_abs_path = os.path.join(nav_dir, "app.log")
 
