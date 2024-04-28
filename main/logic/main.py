@@ -3,12 +3,14 @@ import multiprocessing
 import time
 import threading
 import sys
-sys.path.append("../../object_detection/src/")
+
+sys.path.append("../../object_detection/src/application")
 
 try:
-    from application.script import ObjectDetection
-except ImportError:
+    from script import ObjectDetection
+except ImportError as err:
     print("Error importing ObjectDetection class")
+    print(err)
     sys.exit(1)
 
 updated_location = threading.Condition()
@@ -36,8 +38,6 @@ def start_object_detection(conn):
 
 def create_pipe(target_class):
     main_conn, sub_conn = multiprocessing.Pipe()
-    # process = multiprocessing.Process(target=target_class(sub_conn))
-    # return process, main_conn
     return multiprocessing.Process(target=start_object_detection, args=(sub_conn,)), main_conn
 
 
@@ -84,11 +84,13 @@ def display_direction_on_video(video_path, conn, output_filename='output.mp4'):
             break
 
         # Send frame to object detection process
+    
         conn.send(frame)
 
         # Receive direction from object detection process
         if conn.poll():  # Check if direction is ready
             direction = conn.recv()
+          
 
         # Add text overlay to the frame
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -103,7 +105,6 @@ def display_direction_on_video(video_path, conn, output_filename='output.mp4'):
     # Release everything when job is finished
     cap.release()
     out.release()
-    cv2.destroyAllWindows()
     conn.close()
 
 
@@ -118,7 +119,10 @@ if __name__ == '__main__':
 
     # Start processes
     object_detection_process.start()
+    direction_display_thread = threading.Thread(target=display_direction_on_video, args=(video_path, object_detection_conn))
+    direction_display_thread.start()
+    direction_display_thread.join()
+    object_detection_process.terminate()
+    print("object detection process terrminated")
 
-    threading.Thread(target=display_direction_on_video, args=(video_path, object_detection_conn)).start()
-
-    main(video_path)
+    # main(video_path)
