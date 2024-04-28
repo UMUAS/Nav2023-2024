@@ -23,9 +23,9 @@ class ServerConnection:
     pass
 
 
-class ClientConnection(ABC):
-    """A connection that acts as a client, receiving data from a flight controller or other
-    mavlink system."""
+class ClientConnectionWrapper(ABC):
+    """A wrapper for a connection that acts as a client, receiving and sending information to a
+    flight controller or other mavlink system."""
 
     heartbeat_timeout = None
 
@@ -91,8 +91,28 @@ class ClientConnection(ABC):
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 2)
 
+    def send_goto_command(self, target_lat, target_lon, target_alt):
+        self.conn.mav.command_long_send(
+            self.conn.target_system,
+            self.conn.target_component,
+            0,
+            0,
+            0,
+            0,
+            0,
+            target_lat,
+            target_lon,
+            target_alt,
+            0,
+            0,
+            0,
+        )
 
-class AutopilotConnection(ClientConnection):
+
+class AutopilotConnectionWrapper(ClientConnectionWrapper):
+    """A wrapper for a connection that acts as a client, receiving and sending information to an
+    Autopilot."""
+
     heartbeat_timeout = AUTOPILOT_HEARTBEAT_TIMEOUT
 
     def __init__(self, conn_string, baudrate=None):
@@ -103,7 +123,10 @@ class AutopilotConnection(ClientConnection):
         self.conn = connection_to_autopilot(self.conn_string, self.baudrate)
 
 
-class GCSConnection(ClientConnection):
+class GCSConnectionWrapper(ClientConnectionWrapper):
+    """A wrapper for a connection that acts as a client, receiving and sending information to a
+    GCS."""
+
     heartbeat_timeout = GCS_HEARTBEAT_TIMEOUT
 
     def __init__(self, conn_string, baudrate=None):
@@ -114,7 +137,7 @@ class GCSConnection(ClientConnection):
         self.conn = connection_to_gcs(self.conn_string, self.baudrate)
 
 
-async def heartbeat_loop(conn: ClientConnection):
+async def heartbeat_loop(conn: ClientConnectionWrapper):
     while True:
         try:
             conn.send_heartbeat_msg()
@@ -123,7 +146,7 @@ async def heartbeat_loop(conn: ClientConnection):
             logger.exception(e)
 
 
-async def receive_msg_loop(conn: ClientConnection):
+async def receive_msg_loop(conn: ClientConnectionWrapper):
     while True:
         try:
             message = await asyncio.get_event_loop().run_in_executor(None, conn.get_msg)
@@ -135,14 +158,14 @@ async def receive_msg_loop(conn: ClientConnection):
             logger.exception(e)
 
 
-async def validate_connection_loop(conn: ClientConnection):
+async def validate_connection_loop(conn: ClientConnectionWrapper):
     while True:
         if not conn.is_valid_connection():
             conn.retry_connection()
         asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
 
 
-async def process_autopilot_msg(message, conn: ClientConnection):
+async def process_autopilot_msg(message, conn: ClientConnectionWrapper):
     # Is the drone still in a valid state?
     # Did we receive a heartbeat message?
     conn.check_heartbeat(message)
@@ -170,14 +193,13 @@ def request_message_interval(
         conn.target_component,
         mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
         0,
-        message_id,  # The MAVLink message ID
-        1e6
-        / frequency_hz,  # The interval between two messages in microseconds. Set to -1 to disable and 0 to request default rate.
+        message_id,
+        1e6 / frequency_hz,
         0,
         0,
         0,
-        0,  # Unused parameters
-        0,  # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
+        0,
+        0,
     )
 
 

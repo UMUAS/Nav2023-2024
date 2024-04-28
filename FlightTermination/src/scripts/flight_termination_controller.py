@@ -10,7 +10,7 @@ import sys
 
 from dotenv import load_dotenv
 from flight_termination.flight_termination import (
-    AutopilotConnection,
+    AutopilotConnectionWrapper,
     begin_flight_termination,
     heartbeat_loop,
     receive_msg_loop,
@@ -33,21 +33,25 @@ async def main():
         autopilot_conn_string = os.getenv("AUTOPILOT_CONN_STRING")
         autopilot_baudrate = os.getenv("AUTOPILOT_BAUDRATE")
 
-        autopilot_conn = AutopilotConnection(autopilot_conn_string, autopilot_baudrate)
-        if not autopilot_conn.conn:
+        autopilot_conn_wrapper = AutopilotConnectionWrapper(
+            autopilot_conn_string, autopilot_baudrate
+        )
+        if not autopilot_conn_wrapper.conn:
             sys.exit(1)
 
         # Wait for a heartbeat from the autopilot before sending commands.
-        autopilot_conn.conn.wait_heartbeat()
+        autopilot_conn_wrapper.conn.wait_heartbeat()
         logger.info("Initial heartbeat received from the autopilot.")
 
         # Request messages from the flight controller.
-        autopilot_conn.request_messages()
+        autopilot_conn_wrapper.request_messages()
 
         # Gather asynchronous tasks.
-        receive_task = asyncio.create_task(receive_msg_loop(autopilot_conn))
-        heartbeat_task = asyncio.create_task(heartbeat_loop(autopilot_conn))
-        validate_connection_task = asyncio.create_task(validate_connection_loop(autopilot_conn))
+        receive_task = asyncio.create_task(receive_msg_loop(autopilot_conn_wrapper))
+        heartbeat_task = asyncio.create_task(heartbeat_loop(autopilot_conn_wrapper))
+        validate_connection_task = asyncio.create_task(
+            validate_connection_loop(autopilot_conn_wrapper)
+        )
 
         try:
             await asyncio.gather(receive_task, heartbeat_task, validate_connection_task)
@@ -59,7 +63,7 @@ async def main():
 
     except KeyboardInterrupt:
         logger.info("Exiting...")
-        autopilot_conn.conn.close()
+        autopilot_conn_wrapper.conn.close()
         sys.exit(1)
 
 
