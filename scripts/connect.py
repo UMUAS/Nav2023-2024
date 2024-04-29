@@ -10,6 +10,7 @@ import sys
 
 from dotenv import load_dotenv
 
+from flight_termination.flight_termination import begin_flight_termination
 from navigation.connection import (
     AutopilotConnectionWrapper,
     heartbeat_loop,
@@ -17,8 +18,6 @@ from navigation.connection import (
     validate_connection_loop,
 )
 from navigation.utils import get_logging_config
-
-from .flight_termination import begin_flight_termination
 
 # Reload environment variables on startup to avoid caching them.
 load_dotenv(verbose=True, override=True)
