@@ -1,7 +1,8 @@
 import unittest
 
 from pymavlink import mavutil
-from src.flight_termination.flight_termination import AutopilotConnectionWrapper
+
+from navigation.connection import AutopilotConnectionWrapper
 
 
 class TestAutopilotHeartbeatMessage(unittest.TestCase):
