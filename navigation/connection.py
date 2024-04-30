@@ -12,7 +12,6 @@ from .utils import (
     GCS_HEARTBEAT_TIMEOUT,
     HEARTBEAT,
     HEARTBEAT_SEND_RATE_HZ,
-    HEARTBEAT_TIMEOUT,
     SYS_STATUS,
 )
 
@@ -42,21 +41,22 @@ class ClientConnectionWrapper(ABC):
     def update_last_heartbeat(self):
         self.last_heartbeat = time.time()
         logger.info(
-            f"Heartbeat from system: {self.conn.target_system} "
-            f"component: {self.conn.target_component}."
+            f"Heartbeat from autopilot received: system: {self.conn.target_system} "
+            f"component: {self.conn.target_component}"
         )
 
-    def check_heartbeat(self, msg):
-        if not msg:
+    def check_heartbeat(self, msg_type):
+        if not msg_type:
             return
-        if msg.get_type() == HEARTBEAT:
+        if msg_type == HEARTBEAT:
             self.update_last_heartbeat()
 
     def retry_connection(self):
         # Try reconnecting.
+        # TODO: Should we really try reconnecting? or Put this in a try-except?
         self.reconnect()
         if self.conn:
-            msg = self.conn.wait_heartbeat(blocking=False, timeout=HEARTBEAT_TIMEOUT)
+            msg = self.conn.wait_heartbeat(blocking=True, timeout=self.heartbeat_timeout)
             if msg:
                 self.update_last_heartbeat()
                 return
@@ -66,11 +66,12 @@ class ClientConnectionWrapper(ABC):
         """Check that we have received a heartbeat within the last `heartbeat_timeout`
         seconds."""
         current_time = time.time()
-        if current_time - self.last_heartbeat > self.heartbeat_timeout:
-            return True
-        return False
+        if (current_time - self.last_heartbeat) > self.heartbeat_timeout:
+            return False
+        return True
 
     def send_heartbeat_msg(self):
+        logger.info("Heartbeat sent from companion computer.")
         self.conn.mav.heartbeat_send(
             mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
             mavutil.mavlink.MAV_AUTOPILOT_INVALID,
@@ -90,23 +91,6 @@ class ClientConnectionWrapper(ABC):
     def request_messages(self):
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 2)
-
-    def send_goto_command(self, target_lat, target_lon, target_alt):
-        self.conn.mav.command_long_send(
-            self.conn.target_system,
-            self.conn.target_component,
-            0,
-            0,
-            0,
-            0,
-            0,
-            target_lat,
-            target_lon,
-            target_alt,
-            0,
-            0,
-            0,
-        )
 
 
 class AutopilotConnectionWrapper(ClientConnectionWrapper):
@@ -148,12 +132,12 @@ async def heartbeat_loop(conn: ClientConnectionWrapper):
 
 async def receive_msg_loop(conn: ClientConnectionWrapper):
     while True:
+        # TODO: Ensure this works as intended.
         try:
             message = await asyncio.get_event_loop().run_in_executor(None, conn.get_msg)
             if message:
-                message = message.to_dict()
-                logger.info(message)
-                asyncio.create_task(process_autopilot_msg(message, conn))
+                # asyncio.create_task(process_autopilot_msg(message, conn))
+                await process_autopilot_msg(message, conn)
         except Exception as e:
             logger.exception(e)
 
@@ -161,17 +145,21 @@ async def receive_msg_loop(conn: ClientConnectionWrapper):
 async def validate_connection_loop(conn: ClientConnectionWrapper):
     while True:
         if not conn.is_valid_connection():
+            logger.info(f"Failed to receive a heartbeat in {conn.heartbeat_timeout} seconds.")
             conn.retry_connection()
-        asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
+        logger.info("Connection still valid!")
+        await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
 
 
 async def process_autopilot_msg(message, conn: ClientConnectionWrapper):
     # Is the drone still in a valid state?
     # Did we receive a heartbeat message?
-    conn.check_heartbeat(message)
-    if message == SYS_STATUS:
+    message_type = message.get_type()
+    conn.check_heartbeat(message_type)
+    # logger.info(message)
+    if message_type == SYS_STATUS:
         pass
-    if message == "":
+    if message_type == "":
         pass
 
 

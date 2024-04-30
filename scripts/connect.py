@@ -10,6 +10,7 @@ import sys
 
 from dotenv import load_dotenv
 
+from flight_termination.flight_termination import begin_flight_termination
 from navigation.connection import (
     AutopilotConnectionWrapper,
     heartbeat_loop,
@@ -17,8 +18,6 @@ from navigation.connection import (
     validate_connection_loop,
 )
 from navigation.utils import get_logging_config
-
-from .flight_termination import begin_flight_termination
 
 # Reload environment variables on startup to avoid caching them.
 load_dotenv(verbose=True, override=True)
@@ -43,6 +42,7 @@ async def main():
 
         # Wait for a heartbeat from the autopilot before sending commands.
         autopilot_conn_wrapper.conn.wait_heartbeat()
+        autopilot_conn_wrapper.update_last_heartbeat()
         logger.info("Initial heartbeat received from the autopilot.")
 
         # Request messages from the flight controller.
@@ -57,11 +57,10 @@ async def main():
 
         try:
             await asyncio.gather(receive_task, heartbeat_task, validate_connection_task)
-        except ConnectionError as e:
-            # We lost connection and could not re-establish.
-            logger.error(e)
-            if e == "Failed to re-establish the connection.":
-                begin_flight_termination()
+        except Exception as error:
+            logger.info(error)
+            logger.info("Beginning flight termination...")
+            begin_flight_termination()
 
     except KeyboardInterrupt:
         logger.info("Exiting...")
