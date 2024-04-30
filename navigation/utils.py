@@ -11,14 +11,14 @@ AUTOPILOT = "Autopilot"
 GCS = "GCS"
 
 HEARTBEAT = "HEARTBEAT"
-AUTOPILOT_HEARTBEAT_TIMEOUT = 5
-GCS_HEARTBEAT_TIMEOUT = 5
-HEARTBEAT_TIMEOUT = 2
-
+AUTOPILOT_HEARTBEAT_TIMEOUT = 2.5
+GCS_HEARTBEAT_TIMEOUT = 2.5
 HEARTBEAT_SEND_RATE_HZ = 1
-# MESSAGE_CHECK_INTERVAL = 0.01
 
 SYS_STATUS = "SYS_STATUS"
+MISSION_REQUEST = "MISSION_REQUEST"
+COMMAND_ACK = "COMMAND_ACK"
+MISSION_ACK = "MISSION_ACK"
 
 
 def valid_latitude_and_longitude(lat, lon):
@@ -46,5 +46,5 @@ def get_logging_config():
 
 def get_nav_dir():
     curr_path = os.path.dirname(__file__)
-    nav_dir = os.path.abspath(os.path.join(curr_path, os.pardir, os.pardir, os.pardir))
+    nav_dir = os.path.abspath(os.path.join(curr_path, os.pardir))
     return nav_dir

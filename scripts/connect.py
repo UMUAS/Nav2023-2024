@@ -42,6 +42,7 @@ async def main():
 
         # Wait for a heartbeat from the autopilot before sending commands.
         autopilot_conn_wrapper.conn.wait_heartbeat()
+        autopilot_conn_wrapper.update_last_heartbeat()
         logger.info("Initial heartbeat received from the autopilot.")
 
         # Request messages from the flight controller.
@@ -56,11 +57,10 @@ async def main():
 
         try:
             await asyncio.gather(receive_task, heartbeat_task, validate_connection_task)
-        except ConnectionError as e:
-            # We lost connection and could not re-establish.
-            logger.error(e)
-            if e == "Failed to re-establish the connection.":
-                begin_flight_termination()
+        except Exception as error:
+            logger.info(error)
+            logger.info("Beginning flight termination...")
+            begin_flight_termination()
 
     except KeyboardInterrupt:
         logger.info("Exiting...")
