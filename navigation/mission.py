@@ -67,19 +67,20 @@ def upload_mission(conn, waypoints: list[MissionItem], home_lat, home_lon, home_
         waypoint_loader.add(mavutil.mavlink.MAVLink_mission_item_message(*waypoint.to_list))
 
     # Set the home of the drone.
-    set_home(conn, home_lat, home_lon, home_alt)
+    # set_home(conn, home_lat, home_lon, home_alt)
 
     conn.waypoint_clear_all_send()
     conn.waypoint_count_send(waypoint_loader.count())
 
     # Send waypoint to the flight controller.
     for _ in range(waypoint_loader.count()):
+        # TODO: Ensure this makes complete sense.
         msg = conn.recv_match(type=[MISSION_REQUEST], blocking=True)
         conn.mav.send(waypoint_loader.wp(msg.seq))
         logger.info(f"Sending waypoint: {msg.seq}/{waypoint_loader.count()-1}.")
 
     msg = conn.recv_match(type=[MISSION_ACK], blocking=True)
-    logging.info(msg)
+    logger.info(msg)
 
     logger.info("Mission acknowledgement received.")
 
@@ -90,7 +91,7 @@ def set_home(conn, lat, lon, alt):
 
     # Wait for command acknowledgment before proceeding.
     msg = conn.recv_match(type=[COMMAND_ACK], blocking=True)
-    logging.info(msg)
+    logger.info(msg)
 
     logger.info(f"Home position set: lat={lat}, lon={lon}, alt={alt}.")
     time.sleep(1)
@@ -113,6 +114,7 @@ def command_set_home(conn, lat, lon, alt):
 
 
 def simple_goto(conn, lat, lon, alt):
+    # TODO: Fix this.
     conn.mav.mission_item_send(
         conn.target_system,
         conn.target_component,
@@ -186,7 +188,7 @@ def takeoff(conn):
         math.nan,
         0,
         0,
-        10,
+        0,
     )
     msg = conn.recv_match(type=[COMMAND_ACK], blocking=True)
     logger.info(msg)

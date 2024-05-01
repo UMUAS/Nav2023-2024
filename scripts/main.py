@@ -9,19 +9,7 @@ import cv2
 import serial
 from dotenv import load_dotenv
 
-sys.path.append("../../object_detection/src/application/")
-sys.path.append("../src/")
-
-try:
-    # Get and print the current working directory
-    for path in sys.path:
-        print(path)
-    from script import ObjectDetection
-except ImportError as err:
-    print("Error importing ObjectDetection class")
-    print(err)
-    sys.exit(1)
-
+from object_detection.src.application.script import ObjectDetection
 
 # Reload environment variables on startup to avoid caching them.
 load_dotenv(verbose=True, override=True)

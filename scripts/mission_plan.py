@@ -8,8 +8,6 @@ from navigation.connection import AutopilotConnectionWrapper
 from navigation.mission import (
     MissionItem,
     arm,
-    disarm,
-    land,
     return_to_launch,
     start_mission,
     takeoff,
@@ -58,9 +56,7 @@ m2 = MissionItem(conn=autopilot.conn, seq=1, current=0, lat=28.452300, lon=-13.8
 m3 = MissionItem(conn=autopilot.conn, seq=2, current=0, lat=28.451000, lon=-13.865909, alt=10)
 waypoints = [m1, m2, m3]
 
-upload_mission(
-    autopilot.conn, waypoints, home_lat=35.3632618888, home_lon=149.165236018, home_alt=10
-)
+upload_mission(autopilot.conn, waypoints, home_lat=28.452386, home_lon=13.867138, home_alt=0)
 arm(autopilot.conn)
 takeoff(autopilot.conn)
 start_mission(autopilot.conn)
@@ -73,13 +69,12 @@ for mission in waypoints:
     )
     logger.info(msg)
 
-# Hold for a few seconds.
-time.sleep(5)
+# # TODO: Hold for a few seconds.
 
 return_to_launch(autopilot.conn)
 
-# TODO: Verify we have returned before landing.
-land(autopilot.conn)
+# # TODO: Verify we have returned before landing.
+# land(autopilot.conn)
 
-# TODO: Verify we have landed before disarming.
-disarm(autopilot.conn)
+# # TODO: Verify we have landed before disarming.
+# disarm(autopilot.conn)
