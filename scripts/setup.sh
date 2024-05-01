@@ -24,6 +24,7 @@ export PX4_HOME_ALT=0
 echo "Adding PYTHONPATH environment variable to shell config file..."
 # Get the absolute path of the parent directory.
 root_dir="$(realpath "$(dirname "$(pwd)")")"
+echo $root_dir
 export PYTHONPATH="${PYTHONPATH}:$root_dir"
 
 echo "Installing dependencies using pip..."
