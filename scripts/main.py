@@ -8,7 +8,7 @@ import time
 import cv2
 import serial
 from dotenv import load_dotenv
-
+sys.path.append("../")
 from object_detection.src.application.script import ObjectDetection
 
 # Reload environment variables on startup to avoid caching them.
@@ -170,7 +170,7 @@ def move(direction):
 
 
 if __name__ == "__main__":
-    video_path = "DJI_0072.MP4"
+    video_path = "DJI_0070.MP4"
     object_detection_process, object_detection_conn = create_pipe(ObjectDetection)
 
     # Start processes
