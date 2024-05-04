@@ -12,7 +12,6 @@ from .utils import (
     GCS_HEARTBEAT_TIMEOUT,
     HEARTBEAT,
     HEARTBEAT_SEND_RATE_HZ,
-    HEARTBEAT_TIMEOUT,
     SYS_STATUS,
 )
 
@@ -23,9 +22,9 @@ class ServerConnection:
     pass
 
 
-class ClientConnection(ABC):
-    """A connection that acts as a client, receiving data from a flight controller or other
-    mavlink system."""
+class ClientConnectionWrapper(ABC):
+    """A wrapper for a connection that acts as a client, receiving and sending information to a
+    flight controller or other mavlink system."""
 
     heartbeat_timeout = None
 
@@ -42,21 +41,22 @@ class ClientConnection(ABC):
     def update_last_heartbeat(self):
         self.last_heartbeat = time.time()
         logger.info(
-            f"Heartbeat from system: {self.conn.target_system} "
-            f"component: {self.conn.target_component}."
+            f"Heartbeat from autopilot received: system: {self.conn.target_system} "
+            f"component: {self.conn.target_component}"
         )
 
-    def check_heartbeat(self, msg):
-        if not msg:
+    def check_heartbeat(self, msg_type):
+        if not msg_type:
             return
-        if msg.get_type() == HEARTBEAT:
+        if msg_type == HEARTBEAT:
             self.update_last_heartbeat()
 
     def retry_connection(self):
         # Try reconnecting.
+        # TODO: Should we really try reconnecting? or Put this in a try-except?
         self.reconnect()
         if self.conn:
-            msg = self.conn.wait_heartbeat(blocking=False, timeout=HEARTBEAT_TIMEOUT)
+            msg = self.conn.wait_heartbeat(blocking=True, timeout=self.heartbeat_timeout)
             if msg:
                 self.update_last_heartbeat()
                 return
@@ -66,11 +66,12 @@ class ClientConnection(ABC):
         """Check that we have received a heartbeat within the last `heartbeat_timeout`
         seconds."""
         current_time = time.time()
-        if current_time - self.last_heartbeat > self.heartbeat_timeout:
-            return True
-        return False
+        if (current_time - self.last_heartbeat) > self.heartbeat_timeout:
+            return False
+        return True
 
     def send_heartbeat_msg(self):
+        logger.info("Heartbeat sent from companion computer.")
         self.conn.mav.heartbeat_send(
             mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
             mavutil.mavlink.MAV_AUTOPILOT_INVALID,
@@ -92,7 +93,10 @@ class ClientConnection(ABC):
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 2)
 
 
-class AutopilotConnection(ClientConnection):
+class AutopilotConnectionWrapper(ClientConnectionWrapper):
+    """A wrapper for a connection that acts as a client, receiving and sending information to an
+    Autopilot."""
+
     heartbeat_timeout = AUTOPILOT_HEARTBEAT_TIMEOUT
 
     def __init__(self, conn_string, baudrate=None):
@@ -103,7 +107,10 @@ class AutopilotConnection(ClientConnection):
         self.conn = connection_to_autopilot(self.conn_string, self.baudrate)
 
 
-class GCSConnection(ClientConnection):
+class GCSConnectionWrapper(ClientConnectionWrapper):
+    """A wrapper for a connection that acts as a client, receiving and sending information to a
+    GCS."""
+
     heartbeat_timeout = GCS_HEARTBEAT_TIMEOUT
 
     def __init__(self, conn_string, baudrate=None):
@@ -114,7 +121,7 @@ class GCSConnection(ClientConnection):
         self.conn = connection_to_gcs(self.conn_string, self.baudrate)
 
 
-async def heartbeat_loop(conn: ClientConnection):
+async def heartbeat_loop(conn: ClientConnectionWrapper):
     while True:
         try:
             conn.send_heartbeat_msg()
@@ -123,32 +130,36 @@ async def heartbeat_loop(conn: ClientConnection):
             logger.exception(e)
 
 
-async def receive_msg_loop(conn: ClientConnection):
+async def receive_msg_loop(conn: ClientConnectionWrapper):
     while True:
+        # TODO: Ensure this works as intended.
         try:
             message = await asyncio.get_event_loop().run_in_executor(None, conn.get_msg)
             if message:
-                message = message.to_dict()
-                logger.info(message)
-                asyncio.create_task(process_autopilot_msg(message, conn))
+                # asyncio.create_task(process_autopilot_msg(message, conn))
+                await process_autopilot_msg(message, conn)
         except Exception as e:
             logger.exception(e)
 
 
-async def validate_connection_loop(conn: ClientConnection):
+async def validate_connection_loop(conn: ClientConnectionWrapper):
     while True:
         if not conn.is_valid_connection():
+            logger.info(f"Failed to receive a heartbeat in {conn.heartbeat_timeout} seconds.")
             conn.retry_connection()
-        asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
+        logger.info("Connection still valid!")
+        await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
 
 
-async def process_autopilot_msg(message, conn: ClientConnection):
+async def process_autopilot_msg(message, conn: ClientConnectionWrapper):
     # Is the drone still in a valid state?
     # Did we receive a heartbeat message?
-    conn.check_heartbeat(message)
-    if message == SYS_STATUS:
+    message_type = message.get_type()
+    conn.check_heartbeat(message_type)
+    # logger.info(message)
+    if message_type == SYS_STATUS:
         pass
-    if message == "":
+    if message_type == "":
         pass
 
 
@@ -170,33 +181,14 @@ def request_message_interval(
         conn.target_component,
         mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
         0,
-        message_id,  # The MAVLink message ID
-        1e6
-        / frequency_hz,  # The interval between two messages in microseconds. Set to -1 to disable and 0 to request default rate.
+        message_id,
+        1e6 / frequency_hz,
         0,
         0,
         0,
-        0,  # Unused parameters
-        0,  # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
+        0,
+        0,
     )
-
-
-def begin_flight_termination():
-    pre_flight_termination()
-    # Set flight to Hold for some time.
-    # Then start flight termination.
-
-
-def pre_flight_termination():
-    pass
-
-
-def terminate_flight():
-    pass
-
-
-def post_flight_termination():
-    pass
 
 
 def connection_to_autopilot(conn_string, baudrate):

@@ -1,6 +1,6 @@
 import unittest
 
-from src.flight_termination.utils import (
+from navigation.utils import (
     MAX_LATITUDE,
     MAX_LONGITUDE,
     MIN_LATITUDE,

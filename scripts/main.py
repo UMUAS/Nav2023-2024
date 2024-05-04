@@ -1,31 +1,24 @@
-import cv2
 import multiprocessing
-import time
-import threading
-import sys
+import os
 import queue
+import sys
+import threading
+import time
+
+import cv2
 import serial
 from collections import namedtuple
 
+from dotenv import load_dotenv
 
-sys.path.append("../../object_detection/src/application/")
-sys.path.append("../src/")
+from object_detection.src.application.script import ObjectDetection
 
-try:
-    # Get and print the current working directory
-    for path in sys.path:
-        print(path)
-    from script import ObjectDetection
-except ImportError as err:
-    print("Error importing ObjectDetection class")
-    print(err)
-    sys.exit(1)
+# Reload environment variables on startup to avoid caching them.
+load_dotenv(verbose=True, override=True)
 
-try:
-    from resources.utils import PORT, BAUD_RATE, MISSION_FILE
-except ImportError:
-    print("Error importing config file")
-    sys.exit(1)
+AUTOPILOT_CONN_STRING = os.getenv("AUTOPILOT_CONN_STRING")
+AUTOPILOT_BAUDRATE = os.getenv("AUTOPILOT_BAUDRATE")
+MISSION_FILE = os.getenv("MISSION_FILE")
 
 updated_location = threading.Condition()
 new_messages = threading.Condition()
@@ -80,7 +73,7 @@ def main(video_path):
 def mission_plan():
     pixhawk_conn = establish_connection()
 
-    print(f"Connected to Pixhawk on {PORT}")
+    print(f"Connected to Pixhawk on {AUTOPILOT_CONN_STRING}")
 
     read_mission()
     print("read plan")
@@ -102,10 +95,10 @@ def send_command(conn, command):
 
 def read_mission():
     try:
-        with open(MISSION_FILE, 'r') as file:
+        with open(MISSION_FILE, "r") as file:
             lines = file.readlines()
             for line in lines:
-                lat, lon, alt = line.strip().split(',')
+                lat, lon, alt = line.strip().split(",")
 
                 command = f"GOTO {lat.strip()} {lon.strip()} {alt.strip()}"
                 messages.put(command)
@@ -119,7 +112,7 @@ def read_mission():
 
 def establish_connection():
     try:
-        return serial.Serial(PORT, BAUD_RATE, timeout=1)
+        return serial.Serial(AUTOPILOT_CONN_STRING, AUTOPILOT_BAUDRATE, timeout=1)
     except serial.SerialException as e:
         print(f"Error: {e}")
 
@@ -147,7 +140,7 @@ def await_image(object_detection_process, object_detection_conn):
         time.sleep(2)
 
 
-def setup_video_writer(cap, output_filename='output.mp4'):
+def setup_video_writer(cap, output_filename="output.mp4"):
     # Get the width and height of video frames
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -155,13 +148,13 @@ def setup_video_writer(cap, output_filename='output.mp4'):
     # Define the codec and create VideoWriter object
     # The following line uses the XVID codec and writes to an AVI file.
     # You can change the codec and file format depending on your needs and platform capabilities.
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_filename, fourcc, 20.0, (frame_width, frame_height), True)
 
     return out
 
 
-def display_direction_on_video(video_path, conn, output_filename='output.mp4'):
+def display_direction_on_video(video_path, conn, output_filename="output.mp4"):
     cap = cv2.VideoCapture(video_path)
     count = 0
     if not cap.isOpened():
@@ -184,10 +177,11 @@ def display_direction_on_video(video_path, conn, output_filename='output.mp4'):
         if conn.poll():  # Check if direction is ready
             direction = conn.recv()
 
-
         # Add text overlay to the frame
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(frame, f"Direction: {direction}", (50, 50), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.putText(
+            frame, f"Direction: {direction}", (50, 50), font, 1, (0, 255, 0), 2, cv2.LINE_AA
+        )
 
         # Write the frame into the file 'output.avi'
         out.write(frame)
@@ -201,18 +195,20 @@ def display_direction_on_video(video_path, conn, output_filename='output.mp4'):
     conn.close()
 
 
-
 def move(direction):
     # Implement movement logic based on 'direction'
     print(f"Direction: {direction}")
 
-if __name__ == '__main__':
-    video_path = 'DJI_0072.MP4'
+
+if __name__ == "__main__":
+    video_path = "DJI_0072.MP4"
     object_detection_process, object_detection_conn = create_pipe(ObjectDetection)
 
     # Start processes
     object_detection_process.start()
-    direction_display_thread = threading.Thread(target=display_direction_on_video, args=(video_path, object_detection_conn))
+    direction_display_thread = threading.Thread(
+        target=display_direction_on_video, args=(video_path, object_detection_conn)
+    )
     direction_display_thread.start()
     direction_display_thread.join()
     object_detection_process.terminate()

@@ -1,7 +1,8 @@
 import unittest
 
 from pymavlink import mavutil
-from src.flight_termination.flight_termination import AutopilotConnection, GCSConnection
+
+from navigation.connection import AutopilotConnectionWrapper
 
 
 class TestAutopilotHeartbeatMessage(unittest.TestCase):
@@ -19,7 +20,7 @@ class TestAutopilotHeartbeatMessage(unittest.TestCase):
 
     def test_sending_heartbeat_msg(self):
         master = self.create_fake_autopilot_client()
-        autopilot_conn = AutopilotConnection("udpout:0.0.0.0:14550")
+        autopilot_conn = AutopilotConnectionWrapper("udpout:0.0.0.0:14550")
 
         # Send a heartbeat message to the fake autopilot.
         autopilot_conn.send_heartbeat_msg()
@@ -33,7 +34,7 @@ class TestAutopilotHeartbeatMessage(unittest.TestCase):
 
     def test_receive_heartbeat_msg(self):
         master = self.create_fake_autopilot_server()
-        autopilot_conn = AutopilotConnection("udpin:0.0.0.0:14551")
+        autopilot_conn = AutopilotConnectionWrapper("udpin:0.0.0.0:14551")
 
         # Receive a heartbeat message from the fake autopilot.
         master.mav.heartbeat_send(
