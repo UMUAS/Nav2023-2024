@@ -5,6 +5,8 @@ import threading
 import sys
 import queue
 import serial
+from collections import namedtuple
+
 
 sys.path.append("../../object_detection/src/application/")
 sys.path.append("../src/")
@@ -26,8 +28,37 @@ except ImportError:
     sys.exit(1)
 
 updated_location = threading.Condition()
+new_messages = threading.Condition()
 image_set = []
 messages = queue.Queue()
+# Queue of ScheduleMessage objects
+waiting_messages = queue.Queue()
+
+
+class ScheduleMessage:
+    def __init__(self, message_type, message, priority):
+        self.message_type = message_type
+        self.message = message
+        self.priority = priority
+
+def scheduler():
+    while True:
+        message_schedule = None
+        with new_messages:
+            new_messages.wait()
+            if not waiting_messages.empty():
+                message = waiting_messages.get()
+                # TODO make message a tuple
+                print(f"Received message: {message}")
+                if "MISSION_PLAN" in message:
+                    # TODO Make priority an enum
+                    message_schedule = ScheduleMessage("START_MISSION", message, 1)
+                elif "OBJECT_DETECTION" in message:
+                    pass
+                elif message == "MOVE":
+                    move()
+            new_messages.notify_all()
+        time.sleep(1)
 
 
 def main(video_path):
