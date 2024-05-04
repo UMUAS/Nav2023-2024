@@ -26,13 +26,32 @@ class ObjectDetection:
             image = self.pipe.recv()
            
             if(len(self.image_array) == 20):
+                direction = self.process()
                 self.image_array.pop(0)
                 self.image_array.append(image)
-                direction = self.process()
                 self.pipe.send(direction)
             else:
                 self.image_array.append(image)
                 self.pipe.send("calculating")
+
+    def detect_center(self,frame,x1,x2,y1,y2):
+        #get midpoint
+        center_x = (int(x2)+int(x1))//2
+        center_y = (int(y2)+int(y1))//2
+        pad_coordinates = (center_x,center_y)
+        #get center of the frame
+        (frame_height, frame_width) = frame.shape[:2] #w:image-width and h:image-height
+        center_coordinates = (frame_width//2, frame_height//2)
+        if(center_coordinates[0] == pad_coordinates[0] and center_coordinates[1] == pad_coordinates[1]):
+            return (True,0,0)
+        else:
+            print(center_coordinates[1], center_y)
+            x_distance = center_x-center_coordinates[0]
+            y_distance = center_y - center_coordinates[1]
+            return (False,x_distance,y_distance)
+        
+        
+        
 
 
     def process(self):
@@ -50,14 +69,22 @@ class ObjectDetection:
         x_distance_start = 0 
         x_distance_end = 0 
 
+        
+
         for box in bounding_boxes_start:
             x1, y1, x2, y2, _, _ = box
-           
+            
             x_distance_start = (x2 - x1)
-        
+       
         for box in bounding_boxes_end:
             x1, y1, x2, y2, _, _ = box
+            res =self.detect_center(self.image_array[-1],x1,x2,y1,y2)
+            if(res[0]):
+                print("pad in the centre")
+            else:
+                print(f"x distance:{res[1]} y distance {res[2]}")
             x_distance_end = (x2 - x1)
+                
 
         # for box in bounding_boxes:
         #     x1, y1, x2, y2, _, _ = box
