@@ -49,10 +49,6 @@ class ObjectDetection:
             x_distance = center_x-center_coordinates[0]
             y_distance = center_y - center_coordinates[1]
             return (False,x_distance,y_distance)
-        
-        
-        
-
 
     def process(self):
         # Convert the received image

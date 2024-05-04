@@ -1,6 +1,7 @@
 from message_object import ScheduleMessage
 import queue
 import threading
+import time
 
 class Scheduler:
     # Queue of ScheduleMessage objects
@@ -26,5 +27,5 @@ class Scheduler:
                         pass
                     elif message == "MOVE":
                         move()
-                new_messages.notify_all()
+                self.new_messages.notify_all()
             time.sleep(1)
