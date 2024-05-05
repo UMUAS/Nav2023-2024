@@ -89,8 +89,9 @@ class ClientConnectionWrapper(ABC):
         return msg
 
     def request_messages(self):
-        request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
-        request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 2)
+        request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 1)
+        request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS, 1)
+        request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 1)
 
 
 class AutopilotConnectionWrapper(ClientConnectionWrapper):
