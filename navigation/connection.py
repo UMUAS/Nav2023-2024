@@ -6,13 +6,21 @@ from abc import ABC, abstractmethod
 from pymavlink import mavutil
 
 from .utils import (
+    ALT_SCALING_FACTOR,
     AUTOPILOT,
     AUTOPILOT_HEARTBEAT_TIMEOUT,
+    BAD_DATA,
+    COMMAND_ACK,
     GCS,
     GCS_HEARTBEAT_TIMEOUT,
+    GLOBAL_POSITION_INT,
     HEARTBEAT,
     HEARTBEAT_SEND_RATE_HZ,
-    SYS_STATUS,
+    LAT_LON_SCALING_FACTOR,
+    MISSION_ACK,
+    MISSION_ITEM_REACHED,
+    MISSION_REQUEST,
+    RC_CHANNELS,
 )
 
 logger = logging.getLogger()
@@ -45,16 +53,13 @@ class ClientConnectionWrapper(ABC):
             f"component: {self.conn.target_component}"
         )
 
-    def check_heartbeat(self, msg_type):
-        if not msg_type:
-            return
-        if msg_type == HEARTBEAT:
-            self.update_last_heartbeat()
+    def update_current_position(self, message):
+        self.latitude = message.lat / LAT_LON_SCALING_FACTOR
+        self.longitude = message.lon / LAT_LON_SCALING_FACTOR
+        self.altitude = message.alt / ALT_SCALING_FACTOR
+        self.pos_last_set_time = time.time()
 
     def retry_connection(self):
-        # Try reconnecting.
-        # TODO: Should we really try reconnecting? or Put this in a try-except?
-        self.reconnect()
         if self.conn:
             msg = self.conn.wait_heartbeat(blocking=True, timeout=self.heartbeat_timeout)
             if msg:
@@ -92,6 +97,7 @@ class ClientConnectionWrapper(ABC):
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 1)
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS, 1)
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 1)
+        # request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_RC_CHANNELS, 1)
 
 
 class AutopilotConnectionWrapper(ClientConnectionWrapper):
@@ -124,23 +130,17 @@ class GCSConnectionWrapper(ClientConnectionWrapper):
 
 async def heartbeat_loop(conn: ClientConnectionWrapper):
     while True:
-        try:
-            conn.send_heartbeat_msg()
-            await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
-        except Exception as e:
-            logger.exception(e)
+        conn.send_heartbeat_msg()
+        await asyncio.sleep(HEARTBEAT_SEND_RATE_HZ)
 
 
 async def receive_msg_loop(conn: ClientConnectionWrapper):
     while True:
-        # TODO: Ensure this works as intended.
-        try:
-            message = await asyncio.get_event_loop().run_in_executor(None, conn.get_msg)
-            if message:
-                # asyncio.create_task(process_autopilot_msg(message, conn))
-                await process_autopilot_msg(message, conn)
-        except Exception as e:
-            logger.exception(e)
+        message = conn.get_msg()
+        if message:
+            await process_autopilot_msg(message, conn)
+        else:
+            await asyncio.sleep(0.01)
 
 
 async def validate_connection_loop(conn: ClientConnectionWrapper):
@@ -153,15 +153,32 @@ async def validate_connection_loop(conn: ClientConnectionWrapper):
 
 
 async def process_autopilot_msg(message, conn: ClientConnectionWrapper):
-    # Is the drone still in a valid state?
-    # Did we receive a heartbeat message?
+    # Validate message.
+    if not message:
+        return
     message_type = message.get_type()
-    conn.check_heartbeat(message_type)
-    # logger.info(message)
-    if message_type == SYS_STATUS:
+    if message_type == BAD_DATA:
+        if mavutil.all_printable(message.data):
+            logger.info(message.data)
+
+    if message_type == HEARTBEAT:
+        logger.info(message.system_status)
+        conn.update_last_heartbeat()
+    elif message_type == GLOBAL_POSITION_INT:
+        conn.update_current_position(message)
+    elif message_type == COMMAND_ACK:
         pass
-    if message_type == "":
+    elif message_type == MISSION_ACK:
         pass
+    elif message_type == MISSION_REQUEST:
+        pass
+    elif message_type == MISSION_ITEM_REACHED:
+        pass
+    elif message_type == RC_CHANNELS:
+        logger.info(f"Channel 1: {message.chan1_raw}")
+        logger.info(f"Channel 2: {message.chan2_raw}")
+        logger.info(f"Channel 3: {message.chan3_raw}")
+        logger.info(f"Channel 4: {message.chan4_raw}")
 
 
 def request_message_interval(
