@@ -17,8 +17,8 @@ set -e
 # source $venv_dir/bin/activate
 
 echo "Set custom home takeoff location for SITL"
-export PX4_HOME_LAT=28.452386
-export PX4_HOME_LON=-13.867138
+export PX4_HOME_LAT=49.81351997154947
+export PX4_HOME_LON=-97.12035271466196
 export PX4_HOME_ALT=0
 
 echo "Adding PYTHONPATH environment variable to shell config file..."

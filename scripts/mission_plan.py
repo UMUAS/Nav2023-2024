@@ -23,8 +23,16 @@ logger = logging.getLogger()
 
 autopilot = AutopilotConnectionWrapper("udpin:localhost:14540")
 
+logger.info("Waiting for a heartbeat from the autopilot...")
 autopilot.conn.wait_heartbeat()
-logger.info("Heatbeat received from the autopilot.")
+logger.info("Heartbeat received from the autopilot.")
+
+
+# batter_status_msg = autopilot.conn.recv_match(type=["BATTERY_STATUS"], blocking=True)
+# sys_status_msg = autopilot.conn.recv_match(type=["SYS_STATUS"], blocking=True)
+# logger.info(batter_status_msg)
+# logger.info(sys_status_msg)
+
 
 # Request all parameters.
 autopilot.conn.mav.param_request_list_send(
@@ -51,12 +59,23 @@ while True:
     if user_input.lower() == "yes":
         break
 
-m1 = MissionItem(conn=autopilot.conn, seq=0, current=0, lat=28.452050, lon=-13.865000, alt=10)
-m2 = MissionItem(conn=autopilot.conn, seq=1, current=0, lat=28.452300, lon=-13.865200, alt=10)
-m3 = MissionItem(conn=autopilot.conn, seq=2, current=0, lat=28.451000, lon=-13.865909, alt=10)
+
+home_lat = 49.81351997154947
+home_lon = -97.12035271466196
+home_alt = 0
+
+# Set the home of the drone.
+# set_home(autopilot.conn, home_lat, home_lon, home_alt, use_curr_location=False)
+
+# Clear all missions.
+autopilot.conn.waypoint_clear_all_send()
+
+m1 = MissionItem(conn=autopilot.conn, seq=0, current=0, lat=49.8142336, lon=-97.1205414, alt=20)
+m2 = MissionItem(conn=autopilot.conn, seq=1, current=0, lat=49.8122997, lon=-97.1186914, alt=20)
+m3 = MissionItem(conn=autopilot.conn, seq=2, current=0, lat=49.8121986, lon=-97.1202400, alt=20)
 waypoints = [m1, m2, m3]
 
-upload_mission(autopilot.conn, waypoints, home_lat=28.452386, home_lon=13.867138, home_alt=0)
+upload_mission(autopilot.conn, waypoints)
 arm(autopilot.conn)
 takeoff(autopilot.conn)
 start_mission(autopilot.conn)
@@ -69,12 +88,8 @@ for mission in waypoints:
     )
     logger.info(msg)
 
-# # TODO: Hold for a few seconds.
+# Hold for a couple seconds.
+time.sleep(2)
+
 
 return_to_launch(autopilot.conn)
-
-# # TODO: Verify we have returned before landing.
-# land(autopilot.conn)
-
-# # TODO: Verify we have landed before disarming.
-# disarm(autopilot.conn)
