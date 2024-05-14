@@ -43,8 +43,10 @@ start_time = time.time()
 while True:
     time.sleep(0.01)
     try:
-        message = autopilot.conn.recv_match(type="PARAM_VALUE", blocking=True).to_dict()
-        logger.info(f"name: {message['param_id']}\tvalue: {message['param_value']}.")
+        message = autopilot.conn.recv_match(type="PARAM_VALUE")
+        if message:
+            messsage = message.to_dict()
+            logger.info(f"name: {message['param_id']}\tvalue: {message['param_value']}.")
     except Exception as error:
         logger.exception(error)
         sys.exit(0)
