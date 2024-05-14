@@ -41,12 +41,11 @@ autopilot.conn.mav.param_request_list_send(
 
 start_time = time.time()
 while True:
-    time.sleep(0.01)
     try:
-        message = autopilot.conn.recv_match(type="PARAM_VALUE")
+        message = autopilot.conn.recv_match(type="PARAM_VALUE", blocking=True, timeout=1)
         if message:
-            messsage = message.to_dict()
-            logger.info(f"name: {message['param_id']}\tvalue: {message['param_value']}.")
+            messsage_dict = message.to_dict()
+            logger.info(f"name: {messsage_dict['param_id']}\tvalue: {messsage_dict['param_value']}.")
     except Exception as error:
         logger.exception(error)
         sys.exit(0)
