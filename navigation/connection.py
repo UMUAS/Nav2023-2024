@@ -21,6 +21,7 @@ from .utils import (
     MISSION_ITEM_REACHED,
     MISSION_REQUEST,
     RC_CHANNELS,
+    SYS_STATUS,
 )
 
 logger = logging.getLogger()
@@ -61,9 +62,11 @@ class ClientConnectionWrapper(ABC):
 
     def retry_connection(self):
         if self.conn:
-            msg = self.conn.wait_heartbeat(blocking=True, timeout=self.heartbeat_timeout)
+            msg = self.conn.recv_match(
+                type=[HEARTBEAT], blocking=True, timeout=self.heartbeat_timeout
+            )
             if msg:
-                self.update_last_heartbeat()
+                self.process_heartbeat(msg)
                 return
         raise ConnectionError("Failed to re-establish the connection.")
 
@@ -98,6 +101,15 @@ class ClientConnectionWrapper(ABC):
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS, 1)
         request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 1)
         # request_message_interval(self.conn, mavutil.mavlink.MAVLINK_MSG_ID_RC_CHANNELS, 1)
+
+    def process_heartbeat(self, heartbeat_message):
+        if not heartbeat_message:
+            return
+        self.update_last_heartbeat()
+        self.system_status = heartbeat_message.system_status
+
+    def process_sys_status(self, sys_status):
+        self.battery_remaining = sys_status.battery_remaining
 
 
 class AutopilotConnectionWrapper(ClientConnectionWrapper):
@@ -162,10 +174,11 @@ async def process_autopilot_msg(message, conn: ClientConnectionWrapper):
             logger.info(message.data)
 
     if message_type == HEARTBEAT:
-        logger.info(message.system_status)
-        conn.update_last_heartbeat()
+        conn.process_heartbeat(message)
     elif message_type == GLOBAL_POSITION_INT:
         conn.update_current_position(message)
+    elif message_type == SYS_STATUS:
+        conn.process_sys_status(message)
     elif message_type == COMMAND_ACK:
         pass
     elif message_type == MISSION_ACK:

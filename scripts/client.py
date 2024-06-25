@@ -1,3 +1,5 @@
+"""A test script for interacting with a server using UNIX domain sockets."""
+
 import socket
 
 # Set the path for the Unix socket.
@@ -11,9 +13,6 @@ client.connect(SOCKET_PATH)
 
 # Send a message to the server.
 message = "FT WAYPOINT"
-client.send(message.encode())
-
-message = "Hello again!!!!!"
 client.send(message.encode())
 
 # Receive a response from the server.

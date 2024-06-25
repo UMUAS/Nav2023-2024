@@ -83,7 +83,7 @@ def upload_mission(conn, waypoints: list[MissionItem]):
 
 def set_home(conn, lat, lon, alt, use_curr_location=False):
     if use_curr_location:
-        logger.info(f"Setting home position to the current position.")
+        logger.info("Setting home position to the current position.")
     else:
         logger.info(f"Setting home position: lat={lat}, lon={lon}, alt={alt}.")
     param1 = 1 if use_curr_location else 0
@@ -269,4 +269,12 @@ def land(conn):
     )
     msg = conn.recv_match(type=[COMMAND_ACK], blocking=True)
     logger.info(msg)
-    logger.info("Landing...")
+    logger.info("Drone landing...")
+    message = conn.recv_match(
+        type=["EXTENDED_SYS_STATE"],
+        condition=f"EXTENDED_SYS_STATE.landed_state == \
+            {mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND}",
+        blocking=True,
+    )
+    logger.info(message)
+    logger.info("Landed!")

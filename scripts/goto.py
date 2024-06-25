@@ -1,18 +1,19 @@
+"""A test script for sending waypoints one at a time to the flight controller -
+GOTO commands."""
+
 import io
 import logging
 import logging.config
-import math
-import sys
 import time
 
-from pymavlink import mavutil
+# from pymavlink import mavutil
 
 from navigation.connection import AutopilotConnectionWrapper
 from navigation.mission import (
     MissionItem,
     arm,
     return_to_launch,
-    set_home,
+    # set_home,
     start_mission,
     takeoff,
     upload_mission,

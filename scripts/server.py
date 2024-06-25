@@ -1,5 +1,5 @@
-"""This script runs on the drone where it maintains the connection with the drone,
-and processes requests from other onboard processes."""
+"""This script runs on the drone, maintaining a connection with it and acting as a
+server, processing requests from other running processes using Unix domain sockets."""
 
 import asyncio
 import io
@@ -20,7 +20,7 @@ from navigation.connection import (
     receive_msg_loop,
     validate_connection_loop,
 )
-from navigation.utils import get_logging_config
+from navigation.utils import HEARTBEAT, get_logging_config
 
 SOCKET_PATH = "/tmp/umuas_socket"
 MAX_LENGTH = 1024
@@ -53,9 +53,8 @@ async def start_async_tasks(autopilot_conn_wrapper):
     receive_task, heartbeat_task, validate_connection_task = get_async_tasks(autopilot_conn_wrapper)
     try:
         await asyncio.gather(receive_task, heartbeat_task, validate_connection_task)
-    except Exception as error:
+    except ConnectionError as error:
         logger.info(error)
-        logger.info("Beginning flight termination...")
         begin_flight_termination(autopilot_conn_wrapper)
 
 
@@ -68,8 +67,8 @@ def get_connection_wrapper():
         sys.exit(1)
 
     logger.info("Waiting for a heartbeat from the autopilot...")
-    autopilot_conn_wrapper.conn.wait_heartbeat()
-    autopilot_conn_wrapper.update_last_heartbeat()
+    message = autopilot_conn_wrapper.conn.recv_match(type=[HEARTBEAT], blocking=True)
+    autopilot_conn_wrapper.process_heartbeat(message)
     logger.info("Initial heartbeat received from the autopilot.")
 
     # Request messages from the flight controller.

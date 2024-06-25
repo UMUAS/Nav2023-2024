@@ -1,3 +1,6 @@
+"""A test script for sending waypoints all at once to the flight controller -
+A mission."""
+
 import io
 import logging
 import logging.config
@@ -45,7 +48,9 @@ while True:
         message = autopilot.conn.recv_match(type="PARAM_VALUE", blocking=True, timeout=1)
         if message:
             messsage_dict = message.to_dict()
-            logger.info(f"name: {messsage_dict['param_id']}\tvalue: {messsage_dict['param_value']}.")
+            logger.info(
+                f"name: {messsage_dict['param_id']}\tvalue: {messsage_dict['param_value']}."
+            )
     except Exception as error:
         logger.exception(error)
         sys.exit(0)
