@@ -1,12 +1,12 @@
-import torch
+import cv2 as cv
+
 # from models.common import DetectMultiBackend
 # from utils.general import non_max_suppression, scale_coords
 # from utils.torch_utils import select_device
 # from utils.augmentations import letterbox
-import numpy as np
-from PIL import Image
-import cv2 as cv
+import torch
 import yolov5
+
 # device = select_device('')
 # model = DetectMultiBackend('yolo5s.pt', device=device, dnn=False)
 # model.warmup(imgsz=(1, 3, 640, 640), half=False)
@@ -42,7 +42,7 @@ import yolov5
 #     return boxes
 
 
-model = yolov5.load('./yolov5s.pt')
+model = yolov5.load("./yolov5s.pt")
 # model = model.fuse() # Fuse parameters to improve inference performance
 
 cap = cv.VideoCapture("../../../DJI_0071.MP4")
@@ -63,20 +63,29 @@ while cap.isOpened():
     # process detections
     # parse results
     predictions = pred.pred[0]
-    boxes = predictions[:, :4] # x1, y1, x2, y2
+    boxes = predictions[:, :4]  # x1, y1, x2, y2
     scores = predictions[:, 4]
     categories = predictions[:, 5]
     # draw boxes
     for box in boxes:
         x1, y1, x2, y2 = box
         cv.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-        cv.putText(frame, 'landing_pad', (int(x1), int(y1)), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv.LINE_AA)
+        cv.putText(
+            frame,
+            "landing_pad",
+            (int(x1), int(y1)),
+            cv.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2,
+            cv.LINE_AA,
+        )
         # randint = torch.randint(0, 1000, (1,)).item()
         # cv.imwrite(f'./detections/img_{randint}.png', frame)
         # print(f'./detections/img_{randint}.png')
 
     cv.imshow("frame", frame)
-    if cv.waitKey(1) & 0xFF == ord('q'):
+    if cv.waitKey(1) & 0xFF == ord("q"):
         break
 
 cap.release()
