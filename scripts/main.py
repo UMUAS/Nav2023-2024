@@ -1,15 +1,13 @@
 import multiprocessing
 import os
 import queue
-import sys
 import threading
 import time
 
 import cv2
 import serial
-from collections import namedtuple
-
 from dotenv import load_dotenv
+
 from object_detection.src.application.script import ObjectDetection
 
 # Reload environment variables on startup to avoid caching them.
@@ -23,6 +21,7 @@ updated_location = threading.Condition()
 new_messages = threading.Condition()
 image_set = []
 messages = queue.Queue()
+
 
 def main(video_path):
     cap = cv2.VideoCapture(video_path)

@@ -1,7 +1,8 @@
-from message_object import ScheduleMessage
+# from message_object import ScheduleMessage
 import queue
 import threading
 import time
+
 
 class Scheduler:
     # Queue of ScheduleMessage objects
@@ -13,7 +14,7 @@ class Scheduler:
 
     def scheduler(self):
         while True:
-            message_schedule = None
+            # message_schedule = None
             with self.new_messages:
                 self.new_messages.wait()
                 if not self.waiting_messages.empty():
@@ -22,10 +23,12 @@ class Scheduler:
                     print(f"Received message: {message}")
                     if "MISSION_PLAN" in message:
                         # TODO Make priority an enum
-                        message_schedule = ScheduleMessage("START_MISSION", message, 1)
+                        # message_schedule = ScheduleMessage("START_MISSION", message, 1)
+                        pass
                     elif "OBJECT_DETECTION" in message:
                         pass
                     elif message == "MOVE":
-                        move()
+                        # move()
+                        pass
                 self.new_messages.notify_all()
             time.sleep(1)
